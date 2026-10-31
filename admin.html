@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f2ec">
+  <meta name="robots" content="noindex,nofollow">
+  <title>JHAVÈ Admin — Accesso riservato</title>
+  <style>
+    :root{--paper:#fffefa;--ink:#171715;--muted:#77746d;--line:#e9e3d8;--gold:#b99a62;--gold-light:#d8c49c;--serif:Georgia,'Times New Roman',serif;--sans:Arial,Helvetica,sans-serif}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% 15%,#fff 0,#f7f3eb 58%,#eee7da 100%);color:var(--ink);font-family:var(--sans);display:grid;place-items:center;padding:24px}
+    .shell{width:min(100%,440px)}.brand{text-align:center;color:var(--gold);font:600 34px var(--serif);letter-spacing:.19em}.sub{text-align:center;color:var(--muted);font-size:9px;letter-spacing:.38em;margin-top:7px;text-transform:uppercase}
+    .card{margin-top:35px;background:rgba(255,254,250,.92);border:1px solid #e7dfd1;box-shadow:0 24px 70px rgba(65,49,22,.08);padding:clamp(25px,7vw,42px)}
+    .eyebrow{font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:#9b7d49;font-weight:bold;text-align:center}.card h1{font:34px var(--serif);font-weight:400;text-align:center;margin:13px 0 9px}.intro{text-align:center;color:var(--muted);font:14px/1.7 var(--serif);margin:0 auto 28px;max-width:290px}
+    label{display:block;font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin:17px 0 8px;color:#555248}input{width:100%;padding:14px 13px;border:1px solid var(--line);background:#fffefa;font:14px var(--sans);outline:none}input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(185,154,98,.12)}
+    button{width:100%;border:1px solid var(--ink);background:var(--ink);color:white;padding:15px;margin-top:23px;font:10px var(--sans);letter-spacing:.2em;text-transform:uppercase;cursor:pointer}button:hover{background:var(--gold);border-color:var(--gold)}button:disabled{opacity:.55;cursor:wait}
+    .message{display:none;margin-top:16px;padding:12px;background:#f5f1e8;color:#6e5732;font-size:12px;line-height:1.6}.message.show{display:block}.foot{text-align:center;color:#888176;font-size:9px;letter-spacing:.13em;margin-top:24px;text-transform:uppercase}
+    #dashboard{display:none}.welcome{text-align:center;font:25px var(--serif);margin:12px 0}.panel-note{font:14px/1.7 var(--serif);color:var(--muted);text-align:center}.status{border:1px solid var(--line);padding:15px;margin-top:24px;font-size:12px;line-height:1.6}.status strong{display:block;color:#8a7045;font-size:10px;letter-spacing:.13em;text-transform:uppercase;margin-bottom:5px}
+    .setup{font-size:12px;line-height:1.7;color:#76664b;text-align:center;margin-top:18px}
+    @media(max-width:420px){body{padding:16px}.card{margin-top:26px}}
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <div class="brand">JHAVÈ</div>
+    <div class="sub">Official · Admin</div>
+    <section class="card" id="login">
+      <div class="eyebrow">Area riservata</div>
+      <h1>Benvenuto</h1>
+      <p class="intro">Accedi al pannello amministrativo JHAVÈ. L'accesso è riservato agli account autorizzati.</p>
+      <form id="loginForm">
+        <label for="email">Email amministratore</label>
+        <input id="email" type="email" autocomplete="username" placeholder="La tua email" required>
+        <label for="password">Password</label>
+        <input id="password" type="password" autocomplete="current-password" placeholder="La tua password" required>
+        <button id="submit" type="submit">Accedi al pannello</button>
+      </form>
+      <div class="message" id="message" role="status" aria-live="polite"></div>
+      <p class="setup" id="setupNote">Configurazione dell'accesso in attesa di collegamento al servizio di autenticazione.</p>
+    </section>
+    <section class="card" id="dashboard">
+      <div class="eyebrow">Accesso verificato</div>
+      <h1>JHAVÈ Admin</h1>
+      <p class="welcome">Il tuo spazio di lavoro.</p>
+      <p class="panel-note">L'area amministrativa è pronta per il prossimo modulo: gestione delle fotografie e dei prodotti.</p>
+      <div class="status"><strong>Stato account</strong><span id="accountEmail"></span><br>Sessione autenticata.</div>
+      <button id="logout" type="button">Esci dall'area riservata</button>
+    </section>
+    <div class="foot">JHAVÈ Official · Accesso privato</div>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    /*
+      CONFIGURAZIONE DA COMPLETARE:
+      Inserire l'URL del progetto Supabase e la chiave anon/publishable.
+      Non inserire MAI qui la service_role key.
+      Creare l'account amministratore da Supabase Authentication.
+    */
+    const SUPABASE_URL = "INSERISCI_QUI_URL_SUPABASE";
+    const SUPABASE_ANON_KEY = "INSERISCI_QUI_CHIAVE_ANON_SUPABASE";
+    const configured = SUPABASE_URL.startsWith("https://") &&
+      !SUPABASE_URL.includes("INSERISCI_QUI") &&
+      SUPABASE_ANON_KEY.length > 30 &&
+      !SUPABASE_ANON_KEY.includes("INSERISCI_QUI");
+
+    const login = document.getElementById("login");
+    const dashboard = document.getElementById("dashboard");
+    const form = document.getElementById("loginForm");
+    const submit = document.getElementById("submit");
+    const message = document.getElementById("message");
+    const setupNote = document.getElementById("setupNote");
+    let supabaseClient = null;
+
+    function showMessage(text) {
+      message.textContent = text;
+      message.classList.add("show");
+    }
+    function showDashboard(user) {
+      login.style.display = "none";
+      dashboard.style.display = "block";
+      document.getElementById("accountEmail").textContent = user.email || "Account amministratore";
+    }
+
+    if (configured && window.supabase) {
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+      });
+      setupNote.style.display = "none";
+      supabaseClient.auth.getSession().then(({data, error}) => {
+        if (!error && data.session) showDashboard(data.session.user);
+      });
+    } else {
+      form.addEventListener("submit", event => {
+        event.preventDefault();
+        showMessage("Accesso non ancora attivato: prima collegheremo il progetto Supabase e creeremo l'account amministratore.");
+      });
+    }
+
+    if (supabaseClient) {
+      form.addEventListener("submit", async event => {
+        event.preventDefault();
+        message.classList.remove("show");
+        submit.disabled = true;
+        submit.textContent = "Verifica in corso…";
+        const {data, error} = await supabaseClient.auth.signInWithPassword({
+          email: document.getElementById("email").value.trim(),
+          password: document.getElementById("password").value
+        });
+        submit.disabled = false;
+        submit.textContent = "Accedi al pannello";
+        if (error) showMessage("Accesso non riuscito. Controlla email e password.");
+        else showDashboard(data.user);
+      });
+      document.getElementById("logout").addEventListener("click", async () => {
+        await supabaseClient.auth.signOut();
+        dashboard.style.display = "none";
+        login.style.display = "block";
+        form.reset();
+      });
+    }
+  </script>
+</body>
+</html>
