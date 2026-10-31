@@ -59,7 +59,8 @@ $("productList").addEventListener("click",async e=>{
  const del=e.target.closest("[data-delete]");if(del){const p=products.find(x=>x.id===del.dataset.delete);if(!p||!confirm('Eliminare "'+p.name+'"?'))return;
  const {error}=await db.from("products").delete().eq("id",p.id);if(error)message("notice","Eliminazione non riuscita: "+error.message);else{message("notice","Prodotto eliminato.");await loadProducts()}}
 });
-$("photo").addEventListener("change",()=>{const file=$("photo").files[0];if(!file)return;if(file.size>10*1024*1024){$("photo").value="";message("notice","La foto supera il limite di 10 MB.");return}if(!["image/jpeg","image/png","image/webp"].includes(file.type)){$("photo").value="";message("notice","Formato non supportato. Usa JPG, PNG o WebP.");return} $("preview").src=URL.createObjectURL(file);$("preview").style.display="block"});
+$("photo").addEventListener("change",()=>{const file=$("photo").files[0];if(!file)return;if(file.size>10*1024*1024){$("photo").value="";message("notice","La foto supera il limite di 10 MB.");return}if(!["image/jpeg","image/png","image/webp"].includes(file.type)){$("photo").value="";message("notice","Formato non supportato. Usa JPG, PNG o WebP.");return}removeCurrentImage=false;$("preview").src=URL.createObjectURL(file);$("preview").style.display="block";$("removePhoto").style.display="inline-block"});
+$("removePhoto").addEventListener("click",()=>{$("photo").value="";removeCurrentImage=true;$("preview").removeAttribute("src");$("preview").style.display="none";$("removePhoto").style.display="none"});
 $("productForm").addEventListener("submit",async e=>{
  e.preventDefault();clearMessage("notice");const btn=$("saveProduct");btn.disabled=true;btn.textContent="Salvataggio…";
  try{
