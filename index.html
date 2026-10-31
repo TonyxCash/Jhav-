@@ -61,6 +61,16 @@
     .products{gap:30px 22px}
     .product{min-width:0;transition:transform .25s}.product:hover{transform:translateY(-3px)}
     .product-image{background:linear-gradient(145deg,#f4f1eb,#e7e1d6);overflow:hidden}
+    .product-gallery{position:relative;width:100%;height:100%;overflow:hidden;touch-action:pan-y;background:#f0ede6}
+    .product-gallery img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none}
+    .product-gallery img.is-active{display:block}
+    .gallery-arrow{position:absolute;top:50%;transform:translateY(-50%);width:32px;height:32px;padding:0;border:1px solid rgba(255,255,255,.75);border-radius:50%;background:rgba(20,20,18,.48);color:#fff;font-size:20px;line-height:1;display:grid;place-items:center;z-index:2}
+    .gallery-arrow.prev{left:9px}.gallery-arrow.next{right:9px}
+    .gallery-count{position:absolute;right:10px;bottom:10px;z-index:2;background:rgba(20,20,18,.58);color:#fff;padding:5px 8px;border-radius:20px;font-size:9px;letter-spacing:.08em}
+    .gallery-dots{position:absolute;left:50%;bottom:13px;transform:translateX(-50%);display:flex;gap:5px;z-index:2}
+    .gallery-dots i{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.55);display:block}
+    .gallery-dots i.active{background:#fff}
+
     .product-image img{transition:transform .7s cubic-bezier(.2,.7,.2,1)}
     .product:hover .product-image img{transform:scale(1.045)}
     .product-info{padding:17px 2px 5px}
@@ -170,7 +180,8 @@
     const productsEl=document.getElementById("products"),countEl=document.getElementById("cartCount"),itemsEl=document.getElementById("cartItems"),totalEl=document.getElementById("cartTotal"),drawer=document.getElementById("drawer"),overlay=document.getElementById("overlay"),toast=document.getElementById("toast");
     function productCard(p){
       const id=escapeHTML(p.id), name=escapeHTML(p.name), category=escapeHTML(p.category);
-      const img = p.image ? '<img src="'+escapeHTML(p.image)+'" alt="'+name+'">' : '<div class="image-placeholder"><b>JHAVÈ</b><small>Foto prodotto da caricare</small></div>';
+      const images=Array.isArray(p.images)&&p.images.length?p.images:(p.image?[p.image]:[]);
+      const img=images.length?'<div class="product-gallery" data-gallery>'+images.map((url,i)=>'<img src="'+escapeHTML(url)+'" alt="'+name+' · foto '+(i+1)+'" class="'+(i===0?'is-active':'')+'" loading="lazy">').join('')+(images.length>1?'<button type="button" class="gallery-arrow prev" data-gallery-prev aria-label="Foto precedente">‹</button><button type="button" class="gallery-arrow next" data-gallery-next aria-label="Foto successiva">›</button><span class="gallery-count">1 / '+images.length+'</span><span class="gallery-dots">'+images.map((_,i)=>'<i class="'+(i===0?'active':'')+'"></i>').join('')+'</span>':'')+'</div>':'<div class="image-placeholder"><b>JHAVÈ</b><small>Foto prodotto da caricare</small></div>';
       const price=p.price==null?"Prezzo da definire":euro(p.price);
       const siblings=p.variant_group?PRODUCTS.filter(x=>x.variant_group===p.variant_group):[];
       const colorLinks=siblings.length>1?'<div class="variant-links"><span>Altri colori:</span>'+siblings.map(x=>'<button type="button" class="variant-link '+(x.id===p.id?'selected':'')+'" data-variant="'+escapeHTML(x.id)+'">'+escapeHTML(x.color_name||x.name.replace(/^.*[–-]\s*/,''))+'</button>').join('')+'</div>':'';
@@ -181,7 +192,16 @@
       productsEl.innerHTML=visible.length?visible.map(productCard).join(""):'<p class="empty-products">Al momento non ci sono prodotti pubblicati in questa categoria. Torna a trovarci presto.</p>';
     }
     const variantHighlightStyle=document.createElement("style");variantHighlightStyle.textContent=".product.variant-target{outline:2px solid #b99a61;outline-offset:5px;transition:outline .2s}";document.head.appendChild(variantHighlightStyle);
-    productsEl.addEventListener("click",e=>{const b=e.target.closest("[data-variant]");if(!b)return;e.preventDefault();e.stopPropagation();const product=PRODUCTS.find(x=>String(x.id)===String(b.dataset.variant));if(!product)return;let target=document.getElementById("product-"+product.id);if(!target){renderProducts("all");target=document.getElementById("product-"+product.id);}if(target){document.querySelectorAll(".variant-target").forEach(x=>x.classList.remove("variant-target"));target.classList.add("variant-target");target.scrollIntoView({behavior:"smooth",block:"center"});}});
+    function setGalleryIndex(gallery,next){
+      const imgs=[...gallery.querySelectorAll("img")],dots=[...gallery.querySelectorAll(".gallery-dots i")];if(imgs.length<2)return;
+      const current=imgs.findIndex(img=>img.classList.contains("is-active")),index=(next+imgs.length)%imgs.length;
+      imgs.forEach((img,i)=>img.classList.toggle("is-active",i===index));dots.forEach((dot,i)=>dot.classList.toggle("active",i===index));
+      const count=gallery.querySelector(".gallery-count");if(count)count.textContent=(index+1)+" / "+imgs.length;
+    }
+    productsEl.addEventListener("click",e=>{
+      const arrow=e.target.closest("[data-gallery-prev],[data-gallery-next]");
+      if(arrow){const gallery=arrow.closest("[data-gallery]"),imgs=[...gallery.querySelectorAll("img")],current=imgs.findIndex(img=>img.classList.contains("is-active"));setGalleryIndex(gallery,current+(arrow.hasAttribute("data-gallery-next")?1:-1));return;}
+      const b=e.target.closest("[data-variant]");if(!b)return;e.preventDefault();e.stopPropagation();const product=PRODUCTS.find(x=>String(x.id)===String(b.dataset.variant));if(!product)return;let target=document.getElementById("product-"+product.id);if(!target){renderProducts("all");target=document.getElementById("product-"+product.id);}if(target){document.querySelectorAll(".variant-target").forEach(x=>x.classList.remove("variant-target"));target.classList.add("variant-target");target.scrollIntoView({behavior:"smooth",block:"center"});}});
     async function loadCollectionCovers(){
       try{
         const client=window.supabase.createClient("https://ftkzjhjumgojmcvybzqu.supabase.co","sb_publishable_0EU8yVrYfT2Zg8NWzUqxPA_UGWk2O9O");
@@ -200,10 +220,10 @@
     async function loadStoreProducts(){
       try {
         const client=window.supabase.createClient("https://ftkzjhjumgojmcvybzqu.supabase.co","sb_publishable_0EU8yVrYfT2Zg8NWzUqxPA_UGWk2O9O");
-        const {data,error}=await client.from("products").select("id,slug,name,category,description,price,sizes,image_url,active,sort_order,color_name,variant_group").eq("active",true).order("sort_order",{ascending:true});
+        const {data,error}=await client.from("products").select("id,slug,name,category,description,price,sizes,image_url,image_urls,active,sort_order,color_name,variant_group").eq("active",true).order("sort_order",{ascending:true});
         if(error) throw error;
         const fallbackImages={"jeans-sartoriale":"assets/jeans.jpg","pantalone-sartoriale":"assets/pantaloni-sartoriali.jpg","tshirt-filo-scozia":"assets/tshirt-filo-scozia.jpg"};
-        PRODUCTS.splice(0,PRODUCTS.length,...(Array.isArray(data)?data:[]).map(p=>({id:p.id,name:p.name,category:p.category,color_name:p.color_name||"",variant_group:p.variant_group||null,description:p.description||"",price:p.price==null?null:Number(p.price),sizes:Array.isArray(p.sizes)?p.sizes:[],image:p.image_url||fallbackImages[p.slug]||"",label:p.category==="shirts"?"T-shirt":p.category==="jeans"?"Jeans":"Pantaloni"})));
+        PRODUCTS.splice(0,PRODUCTS.length,...(Array.isArray(data)?data:[]).map(p=>({id:p.id,name:p.name,category:p.category,color_name:p.color_name||"",variant_group:p.variant_group||null,description:p.description||"",price:p.price==null?null:Number(p.price),sizes:Array.isArray(p.sizes)?p.sizes:[],image:p.image_url||fallbackImages[p.slug]||"",images:Array.isArray(p.image_urls)&&p.image_urls.length?p.image_urls:(p.image_url?[p.image_url]:[]),label:p.category==="shirts"?"T-shirt":p.category==="jeans"?"Jeans":"Pantaloni"})));
       } catch(error) {
         console.warn("Catalogo remoto non disponibile; uso il catalogo locale.",error);
       }
