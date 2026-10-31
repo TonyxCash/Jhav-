@@ -98,6 +98,14 @@
       .product-actions select,.product-actions .add{padding-inline:6px}
     }
 
+
+    .cart-icon-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:54px;padding:10px 12px;border:1px solid #c7b38d;background:transparent}
+    .cart-symbol{font-family:Arial,sans-serif;font-size:21px;line-height:1;filter:grayscale(1);transition:transform .2s}
+    .cart-icon-button:hover{background:#f5efe3}
+    .cart-icon-button:hover .cart-symbol{transform:translateY(-2px)}
+    .cart-icon-button .cart-count{margin-left:0}
+    @media(max-width:420px){.cart-icon-button{min-width:48px;padding:9px 10px}.cart-symbol{font-size:20px}}
+
   </style>
 </head>
 <body>
@@ -105,7 +113,7 @@
   <header>
     <a class="brand" href="#">JHAVÈ<small>OFFICIAL</small></a>
     <nav><a href="#collezioni">Collezioni</a><a href="#shop">Shop</a><a href="#storia">Il brand</a></nav>
-    <button class="cart-toggle" id="openCart">Carrello <span class="cart-count" id="cartCount">0</span></button>
+    <button class="cart-toggle cart-icon-button" id="openCart" type="button" aria-label="Apri il carrello" title="Carrello"><span class="cart-symbol" aria-hidden="true">🛒</span><span class="cart-count" id="cartCount">0</span></button>
   </header>
   <main>
     <section class="hero">
