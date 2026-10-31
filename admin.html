@@ -12,7 +12,17 @@
 <section class="card" id="login"><div class="eyebrow">Area riservata</div><h1>Benvenuto</h1><p class="muted">Accedi per gestire prodotti, prezzi, taglie e fotografie del catalogo.</p>
 <form id="loginForm"><label for="email">Email amministratore</label><input id="email" type="email" autocomplete="username" required><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required><button id="submit" type="submit">Accedi al pannello</button></form><div class="message" id="loginMessage" role="status"></div></section>
 <section class="card" id="dashboard"><div class="toolbar"><div><div class="eyebrow">Catalogo e contenuti</div><h1>Gestione JHAVÈ</h1><div class="muted" id="accountEmail"></div></div><div><button class="secondary" id="newProduct">Nuovo prodotto</button><button class="secondary" id="logout">Esci</button></div></div>
-<div class="message" id="notice" role="status"></div><div id="productList" class="products"></div>
+<div class="message" id="notice" role="status"></div>
+<section id="coverManager" style="border:1px solid var(--line);padding:20px;margin:20px 0;background:#fffefa">
+<div class="eyebrow">Contenuti del sito</div><h1 style="font-size:26px;margin-bottom:8px">Immagini copertina</h1>
+<p class="muted">Carica le fotografie dei modelli che indossano i capi. Queste immagini sono indipendenti dalle foto dei singoli prodotti e appariranno nelle tre categorie della home page.</p>
+<div class="grid">
+<div><label for="cover-jeans">Jeans · modello indossato</label><input id="cover-jeans" type="file" accept="image/jpeg,image/png,image/webp"><img id="cover-preview-jeans" class="preview" alt="Anteprima copertina jeans" style="display:none"><p class="muted" id="cover-status-jeans">Nessuna copertina personalizzata caricata.</p></div>
+<div><label for="cover-trousers">Pantaloni · modello indossato</label><input id="cover-trousers" type="file" accept="image/jpeg,image/png,image/webp"><img id="cover-preview-trousers" class="preview" alt="Anteprima copertina pantaloni" style="display:none"><p class="muted" id="cover-status-trousers">Nessuna copertina personalizzata caricata.</p></div>
+<div><label for="cover-shirts">T-shirt · modello indossato</label><input id="cover-shirts" type="file" accept="image/jpeg,image/png,image/webp"><img id="cover-preview-shirts" class="preview" alt="Anteprima copertina T-shirt" style="display:none"><p class="muted" id="cover-status-shirts">Nessuna copertina personalizzata caricata.</p></div>
+</div><p class="muted">Formati: JPG, PNG o WebP · massimo 10 MB per immagine. Il caricamento aggiorna direttamente il sito.</p>
+</section>
+<div id="productList" class="products"></div>
 <section id="editor" style="display:none;border-top:1px solid var(--line);margin-top:28px;padding-top:22px"><div class="eyebrow">Scheda prodotto</div><h1 id="editorTitle">Nuovo prodotto</h1>
 <form id="productForm"><input type="hidden" id="productId"><div class="grid">
 <div><label for="name">Nome prodotto</label><input id="name" required maxlength="100"></div><div><label for="slug">Identificativo (slug)</label><input id="slug" required pattern="[a-z0-9-]+" placeholder="es. jeans-sartoriale"></div>
@@ -35,8 +45,32 @@ function euro(v){return v==null?"Prezzo da definire":new Intl.NumberFormat("it-I
 async function enter(user){
  const {data,error}=await db.from("jhave_admins").select("user_id").eq("user_id",user.id).maybeSingle();
  if(error||!data){await db.auth.signOut();$("login").style.display="block";$("dashboard").style.display="none";message("loginMessage","Questo account non è autorizzato come amministratore. Verifica che la configurazione SQL sia stata eseguita correttamente.");return}
- currentUser=user;$("login").style.display="none";$("dashboard").style.display="block";$("accountEmail").textContent=user.email||"Account amministratore";await loadProducts();
+ currentUser=user;$("login").style.display="none";$("dashboard").style.display="block";$("accountEmail").textContent=user.email||"Account amministratore";await Promise.all([loadProducts(),loadCoverSettings()]);
 }
+const COVER_KEYS=["jeans","trousers","shirts"];
+async function loadCoverSettings(){
+ const {data,error}=await db.from("store_settings").select("setting_key,image_url").in("setting_key",COVER_KEYS.map(x=>"cover_"+x));
+ if(error){message("notice","Immagini copertina: "+error.message+" · Sezione da configurare con la migrazione SQL.");return}
+ (data||[]).forEach(row=>{const key=row.setting_key.replace("cover_","");if(!COVER_KEYS.includes(key)||!row.image_url)return;$("cover-preview-"+key).src=row.image_url;$("cover-preview-"+key).style.display="block";$("cover-status-"+key).textContent="Copertina attualmente pubblicata.";});
+}
+async function uploadCover(key,file){
+ const status=$("cover-status-"+key),input=$("cover-"+key);
+ if(!file)return;
+ if(file.size>10*1024*1024){input.value="";status.textContent="File troppo grande: massimo 10 MB.";return}
+ if(!["image/jpeg","image/png","image/webp"].includes(file.type)){input.value="";status.textContent="Formato non supportato. Usa JPG, PNG o WebP.";return}
+ status.textContent="Caricamento in corso…";input.disabled=true;
+ try{
+  const ext=file.name.split(".").pop().toLowerCase(),path="covers/"+key+"-"+Date.now()+"."+ext;
+  const up=await db.storage.from("jhave-products").upload(path,file,{upsert:true,contentType:file.type});
+  if(up.error)throw up.error;
+  const url=db.storage.from("jhave-products").getPublicUrl(path).data.publicUrl;
+  const saved=await db.from("store_settings").upsert({setting_key:"cover_"+key,image_url:url,updated_at:new Date().toISOString()},{onConflict:"setting_key"});
+  if(saved.error)throw saved.error;
+  $("cover-preview-"+key).src=url;$("cover-preview-"+key).style.display="block";status.textContent="Copertina salvata e pubblicata sul sito.";message("notice","Copertina "+(key==="shirts"?"T-shirt":key==="trousers"?"pantaloni":"jeans")+" aggiornata.");
+ }catch(err){status.textContent="Caricamento non riuscito: "+(err.message||"errore");}
+ finally{input.disabled=false;input.value="";}
+}
+COVER_KEYS.forEach(key=>$("cover-"+key).addEventListener("change",e=>uploadCover(key,e.target.files[0])));
 async function loadProducts(){
  clearMessage("notice");$("productList").innerHTML="<p class='muted'>Caricamento catalogo…</p>";
  const {data,error}=await db.from("products").select("*").order("sort_order",{ascending:true});
