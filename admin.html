@@ -25,7 +25,7 @@
 <div><label for="category">Categoria</label><select id="category"><option value="jeans">Jeans</option><option value="trousers">Pantaloni</option><option value="shirts">T-shirt</option></select></div><div><label for="price">Prezzo in euro (lascia vuoto se da definire)</label><input id="price" type="number" min="0" step="0.01" inputmode="decimal"></div>
 <div><label for="colorName">Colore</label><input id="colorName" maxlength="40" placeholder="es. Beige, Blu, Nero"></div><div><label for="variantGroup">Gruppo colori</label><input id="variantGroup" maxlength="80" placeholder="es. pantalone-sartoriale-uomo"><small class="muted" id="variantHelp">Per mostrare i colori insieme sul sito, tutti i prodotti dello stesso modello devono avere lo stesso gruppo. Il pulsante “Duplica” lo imposta automaticamente.</small></div><div class="wide"><label for="description">Descrizione</label><textarea id="description"></textarea></div><div class="wide"><label for="sizes">Taglie disponibili (separate da virgola)</label><input id="sizes" placeholder="46, 48, 50, 52, 54, 56"></div>
 <div><label for="sortOrder">Ordine di visualizzazione</label><input id="sortOrder" type="number" step="1" value="0"></div><div><label for="active">Visibilità sul sito</label><select id="active"><option value="true">Pubblicato</option><option value="false">Nascosto</option></select></div>
-<div class="wide"><label for="photo">Fotografia prodotto (JPG, PNG o WebP · max 10 MB)</label><input id="photo" type="file" accept="image/jpeg,image/png,image/webp"><img id="preview" class="preview" alt="Anteprima fotografia" style="display:none"><button id="removePhoto" class="danger" type="button" style="display:none;margin-top:10px">Rimuovi fotografia</button><p class="muted" id="photoHelp">Puoi caricare una nuova foto oppure rimuovere quella attuale senza cancellare il prodotto.</p></div>
+<div class="wide"><label for="photo">Fotografie prodotto (puoi selezionarne più di una · JPG, PNG o WebP · max 10 MB ciascuna)</label><input id="photo" type="file" accept="image/jpeg,image/png,image/webp" multiple><div id="galleryPreview" style="display:flex;gap:9px;flex-wrap:wrap;margin-top:12px"></div><button id="removePhoto" class="danger" type="button" style="display:none;margin-top:10px">Rimuovi tutte le fotografie</button><p class="muted" id="photoHelp">Le nuove foto si aggiungono a quelle già presenti.</p></div>
 </div><div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:22px"><button id="saveProduct" type="submit">Salva prodotto</button><button class="secondary" id="cancelEdit" type="button">Annulla</button></div></form></section>
 </section><div class="foot">JHAVÈ Official · Accesso privato</div></main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>
@@ -33,7 +33,7 @@ const SUPABASE_URL="https://ftkzjhjumgojmcvybzqu.supabase.co";
 const SUPABASE_KEY="sb_publishable_0EU8yVrYfT2Zg8NWzUqxPA_UGWk2O9O";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 const $=id=>document.getElementById(id);
-let currentUser=null,products=[],removeCurrentImage=false;
+let currentUser=null,products=[],removeCurrentImage=false,currentImageUrls=[];
 function message(id,text){$(id).textContent=text;$(id).classList.add("show")}
 function clearMessage(id){$(id).classList.remove("show")}
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
@@ -95,10 +95,19 @@ function renderList(){
  if(!products.length){$("productList").innerHTML="<p class='muted'>Nessun prodotto. Crea la prima scheda.</p>";return}
  $("productList").innerHTML=products.map(p=>'<article class="product">'+(p.image_url?'<img src="'+esc(p.image_url)+'" alt="">':'<div class="placeholder">J</div>')+'<div><strong>'+esc(p.name)+'</strong><small>'+esc(p.category==="shirts"?"T-shirt":p.category==="jeans"?"Jeans":"Pantaloni")+(p.color_name?' · '+esc(p.color_name):'')+(p.variant_group?' · <span style="color:#8a6d3b">Colori collegati</span>':'')+' · '+euro(p.price)+' · '+(p.active?"Pubblicato":"Nascosto")+'<br>Taglie: '+esc((p.sizes||[]).join(", "))+'</small></div><div class="product-actions"><button type="button" data-edit="'+esc(p.id)+'" class="secondary">Modifica</button><button type="button" data-duplicate="'+esc(p.id)+'" class="secondary">Duplica</button><button type="button" data-delete="'+esc(p.id)+'" class="danger">Elimina</button></div></article>').join("");
 }
+function renderGalleryPreview(urls){
+ const wrap=$("galleryPreview");wrap.innerHTML=(urls||[]).map((url,i)=>'<div style="position:relative"><img src="'+esc(url)+'" alt="Foto '+(i+1)+'" style="width:76px;height:96px;object-fit:cover;border:1px solid var(--line)"></div>').join("");
+ $("removePhoto").style.display=urls&&urls.length?"inline-block":"none";
+}
 function openEditor(p,duplicate=false){
- $("productForm").reset();removeCurrentImage=false;$("productId").value=duplicate?"":(p?.id||"");$("name").value=p?(duplicate?p.name+" – nuovo colore":p.name):"";
+ $("productForm").reset();removeCurrentImage=false;
+ currentImageUrls=duplicate?[]:(p?.image_urls?.length?[...p.image_urls]:(p?.image_url?[p.image_url]:[]));
+ $("productId").value=duplicate?"":(p?.id||"");$("name").value=p?(duplicate?p.name+" – nuovo colore":p.name):"";
  let slug=p?.slug||"";if(duplicate){let n=2;while(products.some(x=>x.slug===slug+"-"+n))n++;slug=slug+"-"+n;}
- $("slug").value=duplicate?slug:(p?.slug||"");$("category").value=p?.category||"trousers";$("colorName").value=duplicate?"":(p?.color_name||"");$("variantGroup").value=p?.variant_group||"";$("price").value=p?.price??"";$("description").value=p?.description||"";$("sizes").value=(p?.sizes||[]).join(", ");$("sortOrder").value=duplicate?products.length+1:(p?.sort_order??(products.length+1));$("active").value=String(p?.active??true);$("photo").value="";$("preview").style.display=!duplicate&&p?.image_url?"block":"none";$("preview").src=!duplicate?(p?.image_url||""):"";$("removePhoto").style.display=!duplicate&&p?.image_url?"inline-block":"none";$("editorTitle").textContent=duplicate?"Duplica prodotto · nuovo colore":(p?"Modifica prodotto":"Nuovo prodotto");$("variantHelp").textContent=duplicate?"Gruppo assegnato automaticamente: questo nuovo colore sarà collegato al prodotto originale sul sito.":"Per mostrare i colori insieme sul sito, tutti i prodotti dello stesso modello devono avere lo stesso gruppo. Il pulsante “Duplica” lo imposta automaticamente."; $("editor").style.display="block";$("editor").scrollIntoView({behavior:"smooth",block:"start"});
+ $("slug").value=duplicate?slug:(p?.slug||"");$("category").value=p?.category||"trousers";$("colorName").value=duplicate?"":(p?.color_name||"");$("variantGroup").value=p?.variant_group||"";$("price").value=p?.price??"";$("description").value=p?.description||"";$("sizes").value=(p?.sizes||[]).join(", ");$("sortOrder").value=duplicate?products.length+1:(p?.sort_order??(products.length+1));$("active").value=String(p?.active??true);$("photo").value="";
+ renderGalleryPreview(currentImageUrls);
+ $("editorTitle").textContent=duplicate?"Duplica prodotto · nuovo colore":(p?"Modifica prodotto":"Nuovo prodotto");$("variantHelp").textContent=duplicate?"Gruppo assegnato automaticamente: questo nuovo colore sarà collegato al prodotto originale sul sito.":"Per mostrare i colori insieme sul sito, tutti i prodotti dello stesso modello devono avere lo stesso gruppo. Il pulsante “Duplica” lo imposta automaticamente.";
+ $("editor").style.display="block";$("editor").scrollIntoView({behavior:"smooth",block:"start"});
 }
 $("newProduct").onclick=()=>openEditor(null);$("cancelEdit").onclick=()=>{$("editor").style.display="none"};
 $("productList").addEventListener("click",async e=>{
@@ -107,21 +116,37 @@ $("productList").addEventListener("click",async e=>{
  const del=e.target.closest("[data-delete]");if(del){const p=products.find(x=>x.id===del.dataset.delete);if(!p||!confirm('Eliminare "'+p.name+'"?'))return;
  const {error}=await db.from("products").delete().eq("id",p.id);if(error)message("notice","Eliminazione non riuscita: "+error.message);else{message("notice","Prodotto eliminato.");await loadProducts()}}
 });
-$("photo").addEventListener("change",()=>{const file=$("photo").files[0];if(!file)return;if(file.size>10*1024*1024){$("photo").value="";message("notice","La foto supera il limite di 10 MB.");return}if(!["image/jpeg","image/png","image/webp"].includes(file.type)){$("photo").value="";message("notice","Formato non supportato. Usa JPG, PNG o WebP.");return}removeCurrentImage=false;$("preview").src=URL.createObjectURL(file);$("preview").style.display="block";$("removePhoto").style.display="inline-block"});
-$("removePhoto").addEventListener("click",()=>{$("photo").value="";removeCurrentImage=true;$("preview").removeAttribute("src");$("preview").style.display="none";$("removePhoto").style.display="none"});
+$("photo").addEventListener("change",()=>{
+ const files=[...$("photo").files];if(!files.length)return;
+ const valid=files.every(file=>file.size<=10*1024*1024&&["image/jpeg","image/png","image/webp"].includes(file.type));
+ if(!valid){$("photo").value="";message("notice","Ogni foto deve essere JPG, PNG o WebP e non superare 10 MB.");return;}
+ $("galleryPreview").innerHTML=currentImageUrls.map((url,i)=>'<img src="'+esc(url)+'" alt="Foto esistente '+(i+1)+'" style="width:76px;height:96px;object-fit:cover;border:1px solid var(--line)">').join("")+
+ files.map((file,i)=>'<img src="'+URL.createObjectURL(file)+'" alt="Nuova foto '+(i+1)+'" style="width:76px;height:96px;object-fit:cover;border:1px solid var(--gold)">').join("");
+ $("removePhoto").style.display="inline-block";
+});
+$("removePhoto").addEventListener("click",()=>{
+ if(!confirm("Rimuovere tutte le foto attuali di questo prodotto?"))return;
+ currentImageUrls=[];removeCurrentImage=true;$("photo").value="";renderGalleryPreview([]);
+});
 $("productForm").addEventListener("submit",async e=>{
  e.preventDefault();clearMessage("notice");const btn=$("saveProduct");btn.disabled=true;btn.textContent="Salvataggio…";
  try{
  const id=$("productId").value;const payload={name:$("name").value.trim(),slug:$("slug").value.trim().toLowerCase(),category:$("category").value,color_name:$("colorName").value.trim(),variant_group:$("variantGroup").value.trim()||null,description:$("description").value.trim(),price:$("price").value===""?null:Number($("price").value),sizes:$("sizes").value.split(",").map(x=>x.trim()).filter(Boolean),sort_order:Number($("sortOrder").value)||0,active:$("active").value==="true",updated_at:new Date().toISOString()};
- if(removeCurrentImage)payload.image_url=null;
+ if(removeCurrentImage){payload.image_url=null;payload.image_urls=[];}
  if(!payload.name||!payload.slug||!Number.isFinite(payload.price??0)||payload.price<0)throw new Error("Controlla nome, slug e prezzo.");
  let saved;
  if(id){const r=await db.from("products").update(payload).eq("id",id).select().single();if(r.error)throw r.error;saved=r.data}
  else{const r=await db.from("products").insert(payload).select().single();if(r.error)throw r.error;saved=r.data}
- const file=$("photo").files[0];
- if(file){const ext=file.name.split(".").pop().toLowerCase();const path=saved.id+"/"+Date.now()+"."+ext;const up=await db.storage.from("jhave-products").upload(path,file,{upsert:true,contentType:file.type});
- if(up.error)throw up.error;const pub=db.storage.from("jhave-products").getPublicUrl(path).data.publicUrl;const upd=await db.from("products").update({image_url:pub,updated_at:new Date().toISOString()}).eq("id",saved.id);if(upd.error)throw upd.error}
- $("editor").style.display="none";message("notice","Prodotto salvato correttamente.");await loadProducts();
+ const files=[...$("photo").files];
+ let urls=removeCurrentImage?[]:[...currentImageUrls];
+ for(const file of files){
+  const ext=(file.name.split(".").pop()||"jpg").toLowerCase(),path=saved.id+"/"+Date.now()+"-"+Math.random().toString(36).slice(2,8)+"."+ext;
+  const up=await db.storage.from("jhave-products").upload(path,file,{upsert:false,contentType:file.type});if(up.error)throw up.error;
+  urls.push(db.storage.from("jhave-products").getPublicUrl(path).data.publicUrl);
+ }
+ if(urls.length){const upd=await db.from("products").update({image_url:urls[0],image_urls:urls,updated_at:new Date().toISOString()}).eq("id",saved.id);if(upd.error)throw upd.error;}
+ else if(removeCurrentImage){const upd=await db.from("products").update({image_url:null,image_urls:[],updated_at:new Date().toISOString()}).eq("id",saved.id);if(upd.error)throw upd.error;}
+ $("editor").style.display="none";message("notice","Prodotto salvato correttamente con "+urls.length+" foto.");await loadProducts();
  }catch(err){message("notice","Salvataggio non riuscito: "+(err.message||"errore imprevisto"))}
  finally{btn.disabled=false;btn.textContent="Salva prodotto"}
 });
