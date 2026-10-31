@@ -23,7 +23,7 @@
     .products{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}.variant-links{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 13px;font-size:10px;color:var(--muted)}.variant-link{border:1px solid var(--line);background:transparent;padding:6px 9px;font-size:10px;color:var(--ink)}.variant-link.selected,.variant-link:hover{border-color:var(--gold);background:#f5f1e8}.product-image{aspect-ratio:4/5;background:linear-gradient(145deg,#f0ede6,#e1dbcf);display:grid;place-items:center;overflow:hidden;position:relative}.product-image img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .55s}.product:hover .product-image img{transform:scale(1.035)}.image-placeholder{text-align:center;color:#77776d;padding:20px}.image-placeholder b{font:30px var(--serif);letter-spacing:.16em;display:block}.image-placeholder small{font-size:9px;letter-spacing:.18em;text-transform:uppercase;display:block;margin-top:10px}.product-info{padding:16px 2px}.product-top{display:flex;justify-content:space-between;gap:10px}.product-name{font:21px var(--serif)}.price{font-size:13px;white-space:nowrap}.product-desc{font-size:11px;color:var(--muted);line-height:1.6;margin:8px 0 14px}.product-actions{display:flex;gap:8px}.product-actions select{min-width:0;flex:1;background:transparent;border:1px solid var(--line);padding:11px 8px;font-size:11px}.add{flex:1;background:#171715;color:white;border:1px solid #171715;padding:11px 9px;font-size:9px;letter-spacing:.12em;text-transform:uppercase;transition:.2s}.add:hover{background:#a88a55;border-color:#a88a55}
     .story{background:#f5f1e8;padding:75px 20px;text-align:center;border-top:1px solid #e9e3d8;border-bottom:1px solid #e9e3d8}.story h2{font:clamp(34px,4vw,52px) var(--serif);font-weight:400;margin:12px 0}.story p{max-width:620px;margin:0 auto;color:#5f6058;font:16px/1.8 var(--serif)}
     footer{padding:45px clamp(18px,5vw,76px);background:#191a17;color:#f4f1e9;display:flex;justify-content:space-between;gap:30px;flex-wrap:wrap}.footer-brand{font:25px var(--serif);letter-spacing:.16em}.footer-note{font-size:10px;letter-spacing:.12em;color:#b7b5aa;margin-top:10px}.footer-links{display:flex;gap:22px;font-size:10px;letter-spacing:.13em;text-transform:uppercase;align-items:center}
-    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:20;opacity:0;pointer-events:none;transition:.2s}.overlay.open{opacity:1;pointer-events:auto}.drawer{position:fixed;right:0;top:0;height:100%;width:min(440px,100%);background:var(--paper);z-index:21;transform:translateX(102%);transition:.25s;padding:26px;display:flex;flex-direction:column}.drawer.open{transform:translateX(0)}.drawer-head{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding-bottom:18px}.drawer h2{font:30px var(--serif);font-weight:400;margin:0}.close{border:0;background:transparent;font-size:25px}.cart-items{overflow:auto;flex:1;padding:16px 0}.cart-row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding:14px 0;font-size:13px}.cart-row small{display:block;color:var(--muted);margin-top:5px}.remove{border:0;background:none;text-decoration:underline;color:var(--muted);font-size:11px}.cart-total{border-top:1px solid var(--ink);padding-top:18px;display:flex;justify-content:space-between;font-size:15px}.checkout{display:grid;gap:9px;margin-top:18px}.checkout a,.checkout button{width:100%;text-align:center;margin:0}#paypalButtonContainer{width:100%;min-height:44px}.secondary{background:transparent;color:var(--ink);border:1px solid var(--ink);padding:15px;font-size:10px;letter-spacing:.14em;text-transform:uppercase}.notice{font-size:11px;line-height:1.6;color:var(--muted);margin-top:12px}
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:20;opacity:0;pointer-events:none;transition:.2s}.overlay.open{opacity:1;pointer-events:auto}.drawer{position:fixed;right:0;top:0;height:100%;width:min(440px,100%);background:var(--paper);z-index:21;transform:translateX(102%);transition:.25s;padding:26px;display:flex;flex-direction:column}.drawer.open{transform:translateX(0)}.drawer-head{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding-bottom:18px}.drawer h2{font:30px var(--serif);font-weight:400;margin:0}.close{border:0;background:transparent;font-size:25px}.cart-items{overflow:auto;flex:1;padding:16px 0}.cart-row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding:14px 0;font-size:13px}.cart-row small{display:block;color:var(--muted);margin-top:5px}.remove{border:0;background:none;text-decoration:underline;color:var(--muted);font-size:11px}.cart-total{border-top:1px solid var(--ink);padding-top:18px;display:flex;justify-content:space-between;font-size:15px}.checkout{display:grid;gap:9px;margin-top:18px}.checkout a,.checkout button{width:100%;text-align:center;margin:0}#paypalButtonContainer,#googlePayButtonContainer{width:100%;min-height:44px}#googlePayButtonContainer{display:flex;justify-content:center}.secondary{background:transparent;color:var(--ink);border:1px solid var(--ink);padding:15px;font-size:10px;letter-spacing:.14em;text-transform:uppercase}.notice{font-size:11px;line-height:1.6;color:var(--muted);margin-top:12px}
     .empty-products{grid-column:1/-1;text-align:center;padding:48px 18px;color:var(--muted);font:16px/1.7 var(--serif)}
     .toast{position:fixed;bottom:20px;left:50%;transform:translate(-50%,20px);background:var(--ink);color:white;padding:13px 18px;font-size:12px;opacity:0;pointer-events:none;transition:.2s;z-index:30}.toast.show{opacity:1;transform:translate(-50%,0)}
     @media(max-width:760px){header{height:70px}.brand{font-size:23px}nav{display:none}.hero{grid-template-columns:1fr}.hero-copy{padding:60px 26px}.hero-art{min-height:310px}.hero{min-height:unset}.hero-art:before{font-size:300px}.collections{grid-template-columns:1fr}.collection{min-height:230px}.shop-head{align-items:flex-start;flex-direction:column}.products{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.product-name{font-size:18px}.product-actions{flex-direction:column}.products .product-actions select,.products .add{width:100%;min-height:40px}.intro{padding-top:60px}}
@@ -60,7 +60,7 @@
     <div class="drawer-head"><h2>Il tuo carrello</h2><button class="close" id="closeCart" aria-label="Chiudi">×</button></div>
     <div class="cart-items" id="cartItems"></div>
     <div class="cart-total"><span>Totale prodotti</span><strong id="cartTotal">€ 0,00</strong></div>
-    <div class="checkout"><div id="paypalButtonContainer" aria-label="Pagamento PayPal"></div><button class="secondary" id="whatsappButton">Richiedi ordine via WhatsApp</button></div>
+    <div class="checkout"><div id="paypalButtonContainer" aria-label="Pagamento PayPal"></div><div id="googlePayButtonContainer" aria-label="Pagamento Google Pay"></div><button class="secondary" id="whatsappButton">Richiedi ordine via WhatsApp</button></div>
     <p class="notice" id="checkoutNotice">I pagamenti e gli ordini saranno attivati dopo aver inserito i dati ufficiali del venditore, il link PayPal e il contatto WhatsApp. Le spese di spedizione verranno confermate prima del pagamento.</p>
   </aside>
   <div class="toast" id="toast"></div>
@@ -130,54 +130,126 @@
       itemsEl.innerHTML=cart.length?cart.map((item,i)=>'<div class="cart-row"><div><strong>'+item.name+'</strong><small>Taglia: '+item.size+' · Quantità: '+item.qty+'</small></div><div style="text-align:right">'+(item.price==null?"Da confermare":euro(item.price*item.qty))+'<br><button class="remove" data-remove="'+i+'">Rimuovi</button></div></div>').join(""):'<p style="color:#777;font:16px Georgia;padding:24px 0">Il carrello è vuoto. Scopri la collezione JHAVÈ.</p>';
       const known=cart.every(x=>x.price!=null),total=cart.reduce((a,b)=>a+(b.price||0)*b.qty,0);
       totalEl.textContent=known?euro(total):"Da confermare";
-      const paypal=document.getElementById("paypalButtonContainer"),wa=document.getElementById("whatsappButton"),notice=document.getElementById("checkoutNotice");
-      paypal.style.display=cart.length&&known?"block":"none";
+      const paypal=document.getElementById("paypalButtonContainer"),googlePay=document.getElementById("googlePayButtonContainer"),wa=document.getElementById("whatsappButton"),notice=document.getElementById("checkoutNotice");
+      paypal.style.display=cart.length&&known?"block":"none";googlePay.style.display=cart.length&&known?"flex":"none";
       wa.disabled=!(cart.length&&STORE.whatsapp);wa.style.opacity=wa.disabled?".45":"1";
       notice.textContent=cart.length&&known?"Totale dei prodotti. Le spese di spedizione non sono incluse: contatta JHAVÈ per confermarle prima di pagare.":"Inserisci nel carrello prodotti con prezzo definito. Per WhatsApp sarà necessario configurare il numero ufficiale del negozio.";
     }
-    let paypalButtonsReady=false;
+    let paypalButtonsReady=false,googlePayReady=false,googlePaymentsClient=null,googlePayConfig=null;
+    async function createStoreOrder(){
+      if(!cart.length||cart.some(x=>x.price==null))throw new Error("Controlla il carrello e i prezzi.");
+      const response=await fetch(STORE.supabaseUrl+"/functions/v1/create-paypal-order",{
+        method:"POST",headers:{"Content-Type":"application/json",apikey:STORE.supabaseKey},
+        body:JSON.stringify({cart:cart.map(x=>({id:x.id,size:x.size,qty:x.qty}))})
+      });
+      const data=await response.json();
+      if(!response.ok||!data.id||!data.amount)throw new Error(data.error||"Impossibile creare l'ordine.");
+      return data;
+    }
+    async function captureStoreOrder(orderID){
+      const response=await fetch(STORE.supabaseUrl+"/functions/v1/capture-paypal-order",{
+        method:"POST",headers:{"Content-Type":"application/json",apikey:STORE.supabaseKey},
+        body:JSON.stringify({orderID})
+      });
+      const result=await response.json();
+      if(!response.ok||result.status!=="COMPLETED")throw new Error(result.error||"Pagamento non confermato.");
+      cart.splice(0,cart.length);renderCart();closeCart();
+      showToast("Pagamento completato. Grazie per aver scelto JHAVÈ!");
+      return result;
+    }
     async function loadPayPalButtons(){
       const container=document.getElementById("paypalButtonContainer");
-      container.innerHTML='<p class="notice">Collegamento a PayPal…</p>';
+      container.innerHTML='<p class="notice">Collegamento ai pagamenti…</p>';
       try{
         const configResponse=await fetch(STORE.supabaseUrl+"/functions/v1/paypal-config",{headers:{apikey:STORE.supabaseKey}});
         const config=await configResponse.json();
         if(!configResponse.ok||!config.clientId)throw new Error(config.error||"Configurazione PayPal non disponibile.");
         const sdk=document.createElement("script");
-        sdk.src="https://www.paypal.com/sdk/js?client-id="+encodeURIComponent(config.clientId)+"&currency=EUR&intent=capture&components=buttons";
+        sdk.src="https://www.paypal.com/sdk/js?client-id="+encodeURIComponent(config.clientId)+"&currency=EUR&intent=capture&components=buttons,googlepay";
         sdk.onload=()=>{
           if(!window.paypal){container.innerHTML='<p class="notice">PayPal non è al momento disponibile.</p>';return;}
           window.paypal.Buttons({
             style:{layout:"vertical",color:"gold",shape:"rect",label:"paypal",height:44},
-            createOrder:async()=>{
-              if(!cart.length||cart.some(x=>x.price==null))throw new Error("Controlla il carrello e i prezzi.");
-              const response=await fetch(STORE.supabaseUrl+"/functions/v1/create-paypal-order",{
-                method:"POST",headers:{"Content-Type":"application/json",apikey:STORE.supabaseKey},
-                body:JSON.stringify({cart:cart.map(x=>({id:x.id,size:x.size,qty:x.qty}))})
-              });
-              const data=await response.json();
-              if(!response.ok||!data.id)throw new Error(data.error||"Impossibile creare l'ordine PayPal.");
-              return data.id;
-            },
-            onApprove:async(data)=>{
-              const response=await fetch(STORE.supabaseUrl+"/functions/v1/capture-paypal-order",{
-                method:"POST",headers:{"Content-Type":"application/json",apikey:STORE.supabaseKey},
-                body:JSON.stringify({orderID:data.orderID})
-              });
-              const result=await response.json();
-              if(!response.ok||result.status!=="COMPLETED")throw new Error(result.error||"Pagamento non confermato.");
-              cart.splice(0,cart.length);renderCart();closeCart();
-              showToast("Pagamento completato. Grazie per aver scelto JHAVÈ!");
-            },
+            createOrder:async()=>{const order=await createStoreOrder();return order.id;},
+            onApprove:async(data)=>{await captureStoreOrder(data.orderID);},
             onCancel:()=>showToast("Pagamento annullato. Il carrello è rimasto salvato."),
             onError:(err)=>{console.error("PayPal checkout:",err);showToast("Errore PayPal. Riprova o contatta JHAVÈ.");}
           }).render("#paypalButtonContainer").then(()=>{paypalButtonsReady=true;});
+          loadGooglePayButton(config.clientId);
         };
         sdk.onerror=()=>{container.innerHTML='<p class="notice">Non riesco a caricare PayPal. Riprova più tardi.</p>';};
         document.head.appendChild(sdk);
       }catch(error){
         console.warn("PayPal non pronto:",error);
         container.innerHTML='<p class="notice">PayPal non ancora configurato: '+escapeHTML(error.message||"errore")+'</p>';
+      }
+    }
+    function loadGooglePayButton(){
+      const container=document.getElementById("googlePayButtonContainer");
+      const googleSdk=document.createElement("script");
+      googleSdk.async=true;googleSdk.src="https://pay.google.com/gp/p/js/pay.js";
+      googleSdk.onload=()=>initializeGooglePay().catch(error=>{console.info("Google Pay non disponibile su questo dispositivo o account:",error);});
+      googleSdk.onerror=()=>console.info("SDK Google Pay non disponibile.");
+      document.head.appendChild(googleSdk);
+    }
+    function getGooglePaymentsClient(){
+      if(!googlePaymentsClient){
+        googlePaymentsClient=new google.payments.api.PaymentsClient({
+          environment:"TEST",
+          paymentDataCallbacks:{onPaymentAuthorized:processGooglePayPayment}
+        });
+      }
+      return googlePaymentsClient;
+    }
+    async function initializeGooglePay(){
+      if(!window.google?.payments?.api||!window.paypal?.Googlepay)return;
+      const paypalGoogle=window.paypal.Googlepay();
+      googlePayConfig=await paypalGoogle.config();
+      if(!googlePayConfig?.allowedPaymentMethods?.length)return;
+      const client=getGooglePaymentsClient();
+      const ready=await client.isReadyToPay({
+        apiVersion:2,apiVersionMinor:0,
+        allowedPaymentMethods:googlePayConfig.allowedPaymentMethods
+      });
+      if(!ready.result)return;
+      const button=client.createButton({
+        onClick:()=>startGooglePayPayment().catch(error=>{console.error("Google Pay:",error);showToast(error.message||"Google Pay non disponibile.");}),
+        buttonType:"pay",buttonColor:"black"
+      });
+      const container=document.getElementById("googlePayButtonContainer");
+      container.innerHTML="";container.appendChild(button);googlePayReady=true;
+    }
+    async function startGooglePayPayment(){
+      if(!googlePayReady||!googlePayConfig)throw new Error("Google Pay non è disponibile.");
+      const order=await createStoreOrder();
+      window.__jhaveGooglePayOrder=order;
+      const request={
+        apiVersion:2,apiVersionMinor:0,
+        allowedPaymentMethods:googlePayConfig.allowedPaymentMethods,
+        merchantInfo:googlePayConfig.merchantInfo,
+        transactionInfo:{countryCode:"IT",currencyCode:"EUR",totalPriceStatus:"FINAL",totalPrice:Number(order.amount).toFixed(2)},
+        callbackIntents:["PAYMENT_AUTHORIZATION"],
+        emailRequired:true
+      };
+      await getGooglePaymentsClient().loadPaymentData(request);
+    }
+    async function processGooglePayPayment(paymentData){
+      try{
+        const order=window.__jhaveGooglePayOrder;
+        if(!order?.id)throw new Error("Ordine Google Pay non trovato.");
+        const confirmation=await window.paypal.Googlepay().confirmOrder({
+          orderId:order.id,
+          paymentMethodData:paymentData.paymentMethodData,
+          email:paymentData.email
+        });
+        if(confirmation.status!=="APPROVED")throw new Error("Google Pay non ha approvato il pagamento.");
+        await captureStoreOrder(order.id);
+        window.__jhaveGooglePayOrder=null;
+        return {transactionState:"SUCCESS"};
+      }catch(error){
+        console.error("Google Pay authorization:",error);
+        window.__jhaveGooglePayOrder=null;
+        return {transactionState:"ERROR",error:{intent:"PAYMENT_AUTHORIZATION",message:error.message||"Pagamento non riuscito."}};
       }
     }
     function showToast(s){toast.textContent=s;toast.classList.add("show");setTimeout(()=>toast.classList.remove("show"),2100);}
