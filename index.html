@@ -98,9 +98,9 @@
     async function loadCollectionCovers(){
       try{
         const client=window.supabase.createClient("https://ftkzjhjumgojmcvybzqu.supabase.co","sb_publishable_0EU8yVrYfT2Zg8NWzUqxPA_UGWk2O9O");
-        const {data,error}=await client.from("store_settings").select("setting_key,image_url").in("setting_key",["cover_jeans","cover_trousers","cover_shirts"]);
+        const {data,error}=await client.from("store_settings").select("setting_key,image_url,image_position,image_zoom").in("setting_key",["cover_jeans","cover_trousers","cover_shirts"]);
         if(error)throw error;
-        (data||[]).forEach(row=>{const key=row.setting_key.replace("cover_","");const img=document.querySelector('[data-collection-image="'+key+'"]');if(img&&row.image_url)img.src=row.image_url;});
+        (data||[]).forEach(row=>{const key=row.setting_key.replace("cover_","");const img=document.querySelector('[data-collection-image="'+key+'"]');if(img){if(row.image_url)img.src=row.image_url;img.style.objectPosition=row.image_position||"50% 50%";img.style.transform="scale("+Math.max(1,Math.min(2.5,Number(row.image_zoom)||1))+")";}});
       }catch(error){console.warn("Copertine personalizzate non disponibili.",error);}
     }
     function updateCollectionImages(){
