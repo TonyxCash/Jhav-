@@ -95,6 +95,14 @@
     }
     const variantHighlightStyle=document.createElement("style");variantHighlightStyle.textContent=".product.variant-target{outline:2px solid #b99a61;outline-offset:5px;transition:outline .2s}";document.head.appendChild(variantHighlightStyle);
     productsEl.addEventListener("click",e=>{const b=e.target.closest("[data-variant]");if(!b)return;e.preventDefault();e.stopPropagation();const product=PRODUCTS.find(x=>String(x.id)===String(b.dataset.variant));if(!product)return;let target=document.getElementById("product-"+product.id);if(!target){renderProducts("all");target=document.getElementById("product-"+product.id);}if(target){document.querySelectorAll(".variant-target").forEach(x=>x.classList.remove("variant-target"));target.classList.add("variant-target");target.scrollIntoView({behavior:"smooth",block:"center"});}});
+    async function loadCollectionCovers(){
+      try{
+        const client=window.supabase.createClient("https://ftkzjhjumgojmcvybzqu.supabase.co","sb_publishable_0EU8yVrYfT2Zg8NWzUqxPA_UGWk2O9O");
+        const {data,error}=await client.from("store_settings").select("setting_key,image_url").in("setting_key",["cover_jeans","cover_trousers","cover_shirts"]);
+        if(error)throw error;
+        (data||[]).forEach(row=>{const key=row.setting_key.replace("cover_","");const img=document.querySelector('[data-collection-image="'+key+'"]');if(img&&row.image_url)img.src=row.image_url;});
+      }catch(error){console.warn("Copertine personalizzate non disponibili.",error);}
+    }
     function updateCollectionImages(){
       document.querySelectorAll("[data-collection-image]").forEach(img=>{
         const category=img.dataset.collectionImage;
