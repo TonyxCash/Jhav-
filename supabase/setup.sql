@@ -45,6 +45,10 @@ create table if not exists public.products (
 alter table public.jhave_admins enable row level security;
 alter table public.products enable row level security;
 
+grant select on public.jhave_admins to authenticated;
+grant select on public.products to anon, authenticated;
+grant insert, update, delete on public.products to authenticated;
+
 drop policy if exists "JHAVE admin reads own record" on public.jhave_admins;
 create policy "JHAVE admin reads own record"
 on public.jhave_admins for select to authenticated
