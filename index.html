@@ -135,7 +135,7 @@
       wa.disabled=!(cart.length&&STORE.whatsapp);wa.style.opacity=wa.disabled?".45":"1";
       notice.textContent=cart.length&&known?"Totale dei prodotti. Le spese di spedizione non sono incluse: contatta JHAVÈ per confermarle prima di pagare.":"Inserisci nel carrello prodotti con prezzo definito. Per WhatsApp sarà necessario configurare il numero ufficiale del negozio.";
     }
-    let paypalButtonsReady=false,googlePayReady=false,googlePaymentsClient=null,googlePayConfig=null;
+    let paypalButtonsReady=false,googlePayReady=false,googlePaymentsClient=null,googlePayConfig=null,googlePayEnvironment="TEST";
     async function createStoreOrder(){
       if(!cart.length||cart.some(x=>x.price==null))throw new Error("Controlla il carrello e i prezzi.");
       const response=await fetch(STORE.supabaseUrl+"/functions/v1/create-paypal-order",{
@@ -164,6 +164,7 @@
         const configResponse=await fetch(STORE.supabaseUrl+"/functions/v1/paypal-config",{headers:{apikey:STORE.supabaseKey}});
         const config=await configResponse.json();
         if(!configResponse.ok||!config.clientId)throw new Error(config.error||"Configurazione PayPal non disponibile.");
+        googlePayEnvironment=config.mode==="live"?"PRODUCTION":"TEST";
         const sdk=document.createElement("script");
         sdk.src="https://www.paypal.com/sdk/js?client-id="+encodeURIComponent(config.clientId)+"&currency=EUR&intent=capture&components=buttons,googlepay";
         sdk.onload=()=>{
@@ -195,7 +196,7 @@
     function getGooglePaymentsClient(){
       if(!googlePaymentsClient){
         googlePaymentsClient=new google.payments.api.PaymentsClient({
-          environment:"TEST",
+          environment:googlePayEnvironment,
           paymentDataCallbacks:{onPaymentAuthorized:processGooglePayPayment}
         });
       }
