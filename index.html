@@ -122,6 +122,7 @@
       }
       renderProducts();
       updateCollectionImages();
+      loadCollectionCovers();
     }
     function renderCart(){
       countEl.textContent=cart.reduce((a,b)=>a+b.qty,0);
