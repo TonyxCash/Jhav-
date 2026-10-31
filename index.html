@@ -202,6 +202,13 @@
       const arrow=e.target.closest("[data-gallery-prev],[data-gallery-next]");
       if(arrow){const gallery=arrow.closest("[data-gallery]"),imgs=[...gallery.querySelectorAll("img")],current=imgs.findIndex(img=>img.classList.contains("is-active"));setGalleryIndex(gallery,current+(arrow.hasAttribute("data-gallery-next")?1:-1));return;}
       const b=e.target.closest("[data-variant]");if(!b)return;e.preventDefault();e.stopPropagation();const product=PRODUCTS.find(x=>String(x.id)===String(b.dataset.variant));if(!product)return;let target=document.getElementById("product-"+product.id);if(!target){renderProducts("all");target=document.getElementById("product-"+product.id);}if(target){document.querySelectorAll(".variant-target").forEach(x=>x.classList.remove("variant-target"));target.classList.add("variant-target");target.scrollIntoView({behavior:"smooth",block:"center"});}});
+    let galleryTouchStart=null;
+    productsEl.addEventListener("pointerdown",e=>{const gallery=e.target.closest("[data-gallery]");if(gallery)galleryTouchStart={gallery,x:e.clientX};});
+    productsEl.addEventListener("pointerup",e=>{
+      if(!galleryTouchStart)return;const dx=e.clientX-galleryTouchStart.x,gallery=galleryTouchStart.gallery;galleryTouchStart=null;
+      if(Math.abs(dx)>35){const imgs=[...gallery.querySelectorAll("img")],current=imgs.findIndex(img=>img.classList.contains("is-active"));setGalleryIndex(gallery,current+(dx<0?1:-1));}
+    });
+    productsEl.addEventListener("pointercancel",()=>{galleryTouchStart=null;});
     async function loadCollectionCovers(){
       try{
         const client=window.supabase.createClient("https://ftkzjhjumgojmcvybzqu.supabase.co","sb_publishable_0EU8yVrYfT2Zg8NWzUqxPA_UGWk2O9O");
