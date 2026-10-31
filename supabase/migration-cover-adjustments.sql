@@ -10,4 +10,4 @@ alter table public.store_settings
 
 alter table public.store_settings
   add constraint store_settings_image_zoom_check
-  check (image_zoom >= 1 and image_zoom <= 2.5);
+  check (image_zoom >= 0.5 and image_zoom <= 2.5);
