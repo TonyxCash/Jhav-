@@ -61,7 +61,7 @@
     <div class="cart-items" id="cartItems"></div>
     <div class="cart-total"><span>Totale prodotti</span><strong id="cartTotal">€ 0,00</strong></div>
     <div class="checkout"><div id="paypalButtonContainer" aria-label="Pagamento PayPal"></div><div id="googlePayButtonContainer" aria-label="Pagamento Google Pay"></div><button class="secondary" id="whatsappButton">Richiedi ordine via WhatsApp</button></div>
-    <p class="notice" id="checkoutNotice">I pagamenti e gli ordini saranno attivati dopo aver inserito i dati ufficiali del venditore, il link PayPal e il contatto WhatsApp. Le spese di spedizione verranno confermate prima del pagamento.</p>
+    <p class="notice" id="checkoutNotice">I pagamenti e gli ordini saranno attivati dopo aver inserito i dati ufficiali del venditore, il link PayPal e il contatto WhatsApp. Spedizione gratuita.</p>
   </aside>
   <div class="toast" id="toast"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -133,7 +133,7 @@
       const paypal=document.getElementById("paypalButtonContainer"),googlePay=document.getElementById("googlePayButtonContainer"),wa=document.getElementById("whatsappButton"),notice=document.getElementById("checkoutNotice");
       paypal.style.display=cart.length&&known?"block":"none";googlePay.style.display=cart.length&&known?"flex":"none";
       wa.disabled=!(cart.length&&STORE.whatsapp);wa.style.opacity=wa.disabled?".45":"1";
-      notice.textContent=cart.length&&known?"Totale dei prodotti. Le spese di spedizione non sono incluse: contatta JHAVÈ per confermarle prima di pagare.":"Inserisci nel carrello prodotti con prezzo definito oppure richiedi conferma direttamente a JHAVÈ su WhatsApp.";
+      notice.textContent=cart.length&&known?"Spedizione gratuita. Il totale mostrato è quello che pagherai.":"Inserisci nel carrello prodotti con prezzo definito oppure richiedi conferma direttamente a JHAVÈ su WhatsApp.";
     }
     let paypalButtonsReady=false,googlePayReady=false,googlePaymentsClient=null,googlePayConfig=null,googlePayEnvironment="TEST";
     async function createStoreOrder(){
@@ -271,7 +271,7 @@
       }).join("\n");
       const known=cart.every(x=>x.price!=null);
       const total=known?euro(cart.reduce((a,b)=>a+b.price*b.qty,0)):"da confermare";
-      const message="Ciao, vorrei richiedere un ordine da JHAVÈ Official.\n\n"+lines+"\n\nTotale prodotti: "+total+"\nSpedizione: da concordare.\nMi confermate disponibilità, costo e tempi di consegna?\n\nGrazie.";
+      const message="Ciao, vorrei richiedere un ordine da JHAVÈ Official.\n\n"+lines+"\n\nTotale prodotti: "+total+"\nSpedizione: gratuita.\nMi confermate disponibilità e tempi di consegna?\n\nGrazie.";
       location.href="https://wa.me/"+STORE.whatsapp+"?text="+encodeURIComponent(message);
     };
     document.getElementById("year").textContent=new Date().getFullYear();loadStoreProducts();renderCart();loadPayPalButtons();
