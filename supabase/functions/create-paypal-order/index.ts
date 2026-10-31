@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
       await fetch(base + "/v2/checkout/orders/" + order.id, { headers: { Authorization: "Bearer " + token } }).catch(() => null);
       throw new Error("Non è stato possibile registrare l'ordine. Riprova.");
     }
-    return json({ id: order.id });
+    return json({ id: order.id, amount: total.toFixed(2) });
   } catch (error) {
     return json({ error: error instanceof Error ? error.message : "Errore durante la creazione del pagamento." }, 400);
   }
