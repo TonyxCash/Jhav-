@@ -68,7 +68,7 @@
   <script>
     /* CONFIGURAZIONE: inserire qui i dati reali prima di attivare le vendite. */
     const STORE = {
-      whatsapp: "", // numero internazionale senza +, es. 393331234567
+      whatsapp: "393510383770", // WhatsApp JHAVÈ in formato internazionale
       currency: "EUR",
       supabaseUrl: "https://ftkzjhjumgojmcvybzqu.supabase.co",
       supabaseKey: "sb_publishable_0EU8yVrYfT2Zg8NWzUqxPA_UGWk2O9O"
@@ -133,7 +133,7 @@
       const paypal=document.getElementById("paypalButtonContainer"),googlePay=document.getElementById("googlePayButtonContainer"),wa=document.getElementById("whatsappButton"),notice=document.getElementById("checkoutNotice");
       paypal.style.display=cart.length&&known?"block":"none";googlePay.style.display=cart.length&&known?"flex":"none";
       wa.disabled=!(cart.length&&STORE.whatsapp);wa.style.opacity=wa.disabled?".45":"1";
-      notice.textContent=cart.length&&known?"Totale dei prodotti. Le spese di spedizione non sono incluse: contatta JHAVÈ per confermarle prima di pagare.":"Inserisci nel carrello prodotti con prezzo definito. Per WhatsApp sarà necessario configurare il numero ufficiale del negozio.";
+      notice.textContent=cart.length&&known?"Totale dei prodotti. Le spese di spedizione non sono incluse: contatta JHAVÈ per confermarle prima di pagare.":"Inserisci nel carrello prodotti con prezzo definito oppure richiedi conferma direttamente a JHAVÈ su WhatsApp.";
     }
     let paypalButtonsReady=false,googlePayReady=false,googlePaymentsClient=null,googlePayConfig=null,googlePayEnvironment="TEST";
     async function createStoreOrder(){
