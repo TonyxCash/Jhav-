@@ -62,6 +62,7 @@
     <p class="notice" id="checkoutNotice">I pagamenti e gli ordini saranno attivati dopo aver inserito i dati ufficiali del venditore, il link PayPal e il contatto WhatsApp. Le spese di spedizione verranno confermate prima del pagamento.</p>
   </aside>
   <div class="toast" id="toast"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     /* CONFIGURAZIONE: inserire qui i dati reali prima di attivare le vendite. */
     const STORE = {
@@ -83,6 +84,20 @@
       return '<article class="product" data-category="'+p.category+'"><div class="product-image">'+img+'</div><div class="product-info"><div class="product-top"><div class="product-name">'+p.name+'</div><div class="price">'+price+'</div></div><p class="product-desc">'+p.description+'</p><div class="product-actions"><select aria-label="Taglia per '+p.name+'" id="size-'+p.id+'"><option value="">Seleziona taglia</option>'+p.sizes.map(s=>'<option>'+s+'</option>').join('')+'</select><button class="add" data-id="'+p.id+'">Aggiungi</button></div></div></article>';
     }
     function renderProducts(filter="all"){productsEl.innerHTML=PRODUCTS.filter(p=>filter==="all"||p.category===filter).map(productCard).join("");}
+    async function loadStoreProducts(){
+      try {
+        const client=window.supabase.createClient("https://ftkzjhjumgojmcvybzqu.supabase.co","sb_publishable_0EU8yVrYfT2Zg8NWzUqxPA_UGWk2O9O");
+        const {data,error}=await client.from("products").select("id,slug,name,category,description,price,sizes,image_url,active,sort_order").eq("active",true).order("sort_order",{ascending:true});
+        if(error) throw error;
+        if(Array.isArray(data)&&data.length){
+          const fallbackImages={"jeans-sartoriale":"assets/jeans.jpg","pantalone-sartoriale":"assets/pantaloni-sartoriali.jpg","tshirt-filo-scozia":"assets/tshirt-filo-scozia.jpg"};
+          PRODUCTS.splice(0,PRODUCTS.length,...data.map(p=>({id:p.id,name:p.name,category:p.category,description:p.description||"",price:p.price==null?null:Number(p.price),sizes:Array.isArray(p.sizes)?p.sizes:[],image:p.image_url||fallbackImages[p.slug]||"",label:p.category==="shirts"?"T-shirt":"Pantaloni"})));
+        }
+      } catch(error) {
+        console.warn("Catalogo remoto non disponibile; uso il catalogo locale.",error);
+      }
+      renderProducts();
+    }
     function renderCart(){
       countEl.textContent=cart.reduce((a,b)=>a+b.qty,0);
       itemsEl.innerHTML=cart.length?cart.map((item,i)=>'<div class="cart-row"><div><strong>'+item.name+'</strong><small>Taglia: '+item.size+' · Quantità: '+item.qty+'</small></div><div style="text-align:right">'+(item.price==null?"Da confermare":euro(item.price*item.qty))+'<br><button class="remove" data-remove="'+i+'">Rimuovi</button></div></div>').join(""):'<p style="color:#777;font:16px Georgia;padding:24px 0">Il carrello è vuoto. Scopri la collezione JHAVÈ.</p>';
@@ -104,7 +119,7 @@
     document.querySelectorAll("[data-jump]").forEach(a=>a.addEventListener("click",()=>{const f=a.dataset.jump;document.querySelectorAll(".filter").forEach(x=>{x.classList.toggle("active",x.dataset.filter===f);});renderProducts(f);}));
     document.getElementById("openCart").onclick=openCart;document.getElementById("closeCart").onclick=closeCart;overlay.onclick=closeCart;
     document.getElementById("whatsappButton").onclick=()=>{if(!STORE.whatsapp)return;const lines=cart.map(x=>x.name+" - taglia "+x.size+" x"+x.qty).join("\n");const total=cart.every(x=>x.price!=null)?euro(cart.reduce((a,b)=>a+b.price*b.qty,0)):"prezzo da confermare";location.href="https://wa.me/"+STORE.whatsapp+"?text="+encodeURIComponent("Ciao, vorrei ordinare da JHAVÈ:\n"+lines+"\nTotale prodotti: "+total+"\nMi confermate disponibilità e spedizione?");};
-    document.getElementById("year").textContent=new Date().getFullYear();renderProducts();renderCart();
+    document.getElementById("year").textContent=new Date().getFullYear();loadStoreProducts();renderCart();
   </script>
 </body>
 </html>
