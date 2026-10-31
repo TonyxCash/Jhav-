@@ -80,8 +80,16 @@
     @media(max-width:760px){
       .announcement{font-size:8px;letter-spacing:.2em}
       header{height:72px;padding-inline:18px}.brand{font-size:25px}
-      .hero{min-height:unset}.hero-copy{padding:68px 27px 58px}.hero h1{font-size:clamp(54px,13vw,76px);margin:23px 0}
-      .hero p{font-size:16px;line-height:1.75}.hero-art{min-height:340px}.hero-art:before{font-size:340px;bottom:-22%}
+      /* Mobile: stack hero copy and artwork instead of squeezing them side by side */
+      .hero{grid-template-columns:minmax(0,1fr);min-height:unset;width:100%;overflow:hidden}
+      .hero-copy{min-width:0;width:100%;padding:58px 27px 48px}
+      .hero h1{font-size:clamp(50px,12vw,68px);margin:23px 0;overflow-wrap:normal}
+      .hero p{font-size:16px;line-height:1.75}
+      .hero-art{width:100%;min-width:0;min-height:290px}
+      .hero-art:before{font-size:300px;bottom:-22%}
+      .hero-mark{max-width:calc(100% - 44px);padding:42px 28px}
+      .hero-mark strong{font-size:clamp(30px,9vw,38px)}
+      .primary{max-width:100%;white-space:normal;text-align:center}
       .hero-mark{padding:48px 34px}.hero-mark strong{font-size:38px}
       .intro{padding:70px 22px 28px}.collections{gap:12px;padding:24px 16px 66px}
       .collection{min-height:235px;padding:24px}.collection h3{font-size:31px}
