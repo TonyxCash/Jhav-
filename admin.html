@@ -19,7 +19,7 @@
 <div><label for="category">Categoria</label><select id="category"><option value="jeans">Jeans</option><option value="trousers">Pantaloni</option><option value="shirts">T-shirt</option></select></div><div><label for="price">Prezzo in euro (lascia vuoto se da definire)</label><input id="price" type="number" min="0" step="0.01" inputmode="decimal"></div>
 <div><label for="colorName">Colore</label><input id="colorName" maxlength="40" placeholder="es. Beige, Blu, Nero"></div><div><label for="variantGroup">Gruppo colori</label><input id="variantGroup" maxlength="80" placeholder="es. pantalone-sartoriale-uomo"></div><div class="wide"><label for="description">Descrizione</label><textarea id="description"></textarea></div><div class="wide"><label for="sizes">Taglie disponibili (separate da virgola)</label><input id="sizes" placeholder="46, 48, 50, 52, 54, 56"></div>
 <div><label for="sortOrder">Ordine di visualizzazione</label><input id="sortOrder" type="number" step="1" value="0"></div><div><label for="active">Visibilità sul sito</label><select id="active"><option value="true">Pubblicato</option><option value="false">Nascosto</option></select></div>
-<div class="wide"><label for="photo">Fotografia prodotto (JPG, PNG o WebP · max 10 MB)</label><input id="photo" type="file" accept="image/jpeg,image/png,image/webp"><img id="preview" class="preview" alt="Anteprima fotografia" style="display:none"></div>
+<div class="wide"><label for="photo">Fotografia prodotto (JPG, PNG o WebP · max 10 MB)</label><input id="photo" type="file" accept="image/jpeg,image/png,image/webp"><img id="preview" class="preview" alt="Anteprima fotografia" style="display:none"><button id="removePhoto" class="danger" type="button" style="display:none;margin-top:10px">Rimuovi fotografia</button><p class="muted" id="photoHelp">Puoi caricare una nuova foto oppure rimuovere quella attuale senza cancellare il prodotto.</p></div>
 </div><div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:22px"><button id="saveProduct" type="submit">Salva prodotto</button><button class="secondary" id="cancelEdit" type="button">Annulla</button></div></form></section>
 </section><div class="foot">JHAVÈ Official · Accesso privato</div></main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>
@@ -27,7 +27,7 @@ const SUPABASE_URL="https://ftkzjhjumgojmcvybzqu.supabase.co";
 const SUPABASE_KEY="sb_publishable_0EU8yVrYfT2Zg8NWzUqxPA_UGWk2O9O";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 const $=id=>document.getElementById(id);
-let currentUser=null,products=[],copiedImageUrl=null;
+let currentUser=null,products=[],removeCurrentImage=false;
 function message(id,text){$(id).textContent=text;$(id).classList.add("show")}
 function clearMessage(id){$(id).classList.remove("show")}
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
@@ -48,9 +48,9 @@ function renderList(){
  $("productList").innerHTML=products.map(p=>'<article class="product">'+(p.image_url?'<img src="'+esc(p.image_url)+'" alt="">':'<div class="placeholder">J</div>')+'<div><strong>'+esc(p.name)+'</strong><small>'+esc(p.category==="shirts"?"T-shirt":p.category==="jeans"?"Jeans":"Pantaloni")+(p.color_name?' · '+esc(p.color_name):'')+' · '+euro(p.price)+' · '+(p.active?"Pubblicato":"Nascosto")+'<br>Taglie: '+esc((p.sizes||[]).join(", "))+'</small></div><div class="product-actions"><button type="button" data-edit="'+esc(p.id)+'" class="secondary">Modifica</button><button type="button" data-duplicate="'+esc(p.id)+'" class="secondary">Duplica</button><button type="button" data-delete="'+esc(p.id)+'" class="danger">Elimina</button></div></article>').join("");
 }
 function openEditor(p,duplicate=false){
- $("productForm").reset();copiedImageUrl=duplicate?null:null;$("productId").value=duplicate?"":(p?.id||"");$("name").value=p?(duplicate?p.name+" – nuovo colore":p.name):"";
+ $("productForm").reset();removeCurrentImage=false;$("productId").value=duplicate?"":(p?.id||"");$("name").value=p?(duplicate?p.name+" – nuovo colore":p.name):"";
  let slug=p?.slug||"";if(duplicate){let n=2;while(products.some(x=>x.slug===slug+"-"+n))n++;slug=slug+"-"+n;}
- $("slug").value=duplicate?slug:(p?.slug||"");$("category").value=p?.category||"trousers";$("colorName").value=duplicate?"":(p?.color_name||"");$("variantGroup").value=p?.variant_group||"";$("price").value=p?.price??"";$("description").value=p?.description||"";$("sizes").value=(p?.sizes||[]).join(", ");$("sortOrder").value=duplicate?products.length+1:(p?.sort_order??(products.length+1));$("active").value=String(p?.active??true);$("photo").value="";$("preview").style.display=!duplicate&&p?.image_url?"block":"none";$("preview").src=!duplicate?(p?.image_url||""):"";$("editorTitle").textContent=duplicate?"Duplica prodotto · nuovo colore":(p?"Modifica prodotto":"Nuovo prodotto");$("editor").style.display="block";$("editor").scrollIntoView({behavior:"smooth",block:"start"});
+ $("slug").value=duplicate?slug:(p?.slug||"");$("category").value=p?.category||"trousers";$("colorName").value=duplicate?"":(p?.color_name||"");$("variantGroup").value=p?.variant_group||"";$("price").value=p?.price??"";$("description").value=p?.description||"";$("sizes").value=(p?.sizes||[]).join(", ");$("sortOrder").value=duplicate?products.length+1:(p?.sort_order??(products.length+1));$("active").value=String(p?.active??true);$("photo").value="";$("preview").style.display=!duplicate&&p?.image_url?"block":"none";$("preview").src=!duplicate?(p?.image_url||""):"";$("removePhoto").style.display=!duplicate&&p?.image_url?"inline-block":"none";$("editorTitle").textContent=duplicate?"Duplica prodotto · nuovo colore":(p?"Modifica prodotto":"Nuovo prodotto");$("editor").style.display="block";$("editor").scrollIntoView({behavior:"smooth",block:"start"});
 }
 $("newProduct").onclick=()=>openEditor(null);$("cancelEdit").onclick=()=>{$("editor").style.display="none"};
 $("productList").addEventListener("click",async e=>{
@@ -64,7 +64,7 @@ $("productForm").addEventListener("submit",async e=>{
  e.preventDefault();clearMessage("notice");const btn=$("saveProduct");btn.disabled=true;btn.textContent="Salvataggio…";
  try{
  const id=$("productId").value;const payload={name:$("name").value.trim(),slug:$("slug").value.trim().toLowerCase(),category:$("category").value,color_name:$("colorName").value.trim(),variant_group:$("variantGroup").value.trim()||null,description:$("description").value.trim(),price:$("price").value===""?null:Number($("price").value),sizes:$("sizes").value.split(",").map(x=>x.trim()).filter(Boolean),sort_order:Number($("sortOrder").value)||0,active:$("active").value==="true",updated_at:new Date().toISOString()};
- if(!id&&copiedImageUrl)payload.image_url=copiedImageUrl;
+ if(removeCurrentImage)payload.image_url=null;
  if(!payload.name||!payload.slug||!Number.isFinite(payload.price??0)||payload.price<0)throw new Error("Controlla nome, slug e prezzo.");
  let saved;
  if(id){const r=await db.from("products").update(payload).eq("id",id).select().single();if(r.error)throw r.error;saved=r.data}
