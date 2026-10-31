@@ -16,7 +16,6 @@
     button{width:100%;border:1px solid var(--ink);background:var(--ink);color:white;padding:15px;margin-top:23px;font:10px var(--sans);letter-spacing:.2em;text-transform:uppercase;cursor:pointer}button:hover{background:var(--gold);border-color:var(--gold)}button:disabled{opacity:.55;cursor:wait}
     .message{display:none;margin-top:16px;padding:12px;background:#f5f1e8;color:#6e5732;font-size:12px;line-height:1.6}.message.show{display:block}.foot{text-align:center;color:#888176;font-size:9px;letter-spacing:.13em;margin-top:24px;text-transform:uppercase}
     #dashboard{display:none}.welcome{text-align:center;font:25px var(--serif);margin:12px 0}.panel-note{font:14px/1.7 var(--serif);color:var(--muted);text-align:center}.status{border:1px solid var(--line);padding:15px;margin-top:24px;font-size:12px;line-height:1.6}.status strong{display:block;color:#8a7045;font-size:10px;letter-spacing:.13em;text-transform:uppercase;margin-bottom:5px}
-    .setup{font-size:12px;line-height:1.7;color:#76664b;text-align:center;margin-top:18px}
     @media(max-width:420px){body{padding:16px}.card{margin-top:26px}}
   </style>
 </head>
@@ -36,40 +35,31 @@
         <button id="submit" type="submit">Accedi al pannello</button>
       </form>
       <div class="message" id="message" role="status" aria-live="polite"></div>
-      <p class="setup" id="setupNote">Configurazione dell'accesso in attesa di collegamento al servizio di autenticazione.</p>
     </section>
     <section class="card" id="dashboard">
-      <div class="eyebrow">Accesso verificato</div>
+      <div class="eyebrow">Accesso autenticato</div>
       <h1>JHAVÈ Admin</h1>
       <p class="welcome">Il tuo spazio di lavoro.</p>
-      <p class="panel-note">L'area amministrativa è pronta per il prossimo modulo: gestione delle fotografie e dei prodotti.</p>
-      <div class="status"><strong>Stato account</strong><span id="accountEmail"></span><br>Sessione autenticata.</div>
+      <p class="panel-note">Collegamento Supabase attivo. Nel prossimo passaggio configureremo l'autorizzazione esclusiva dell'amministratore prima di aggiungere prodotti e fotografie.</p>
+      <div class="status"><strong>Account autenticato</strong><span id="accountEmail"></span></div>
       <button id="logout" type="button">Esci dall'area riservata</button>
     </section>
     <div class="foot">JHAVÈ Official · Accesso privato</div>
   </main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    /*
-      CONFIGURAZIONE DA COMPLETARE:
-      Inserire l'URL del progetto Supabase e la chiave anon/publishable.
-      Non inserire MAI qui la service_role key.
-      Creare l'account amministratore da Supabase Authentication.
-    */
-    const SUPABASE_URL = "INSERISCI_QUI_URL_SUPABASE";
-    const SUPABASE_ANON_KEY = "INSERISCI_QUI_CHIAVE_ANON_SUPABASE";
-    const configured = SUPABASE_URL.startsWith("https://") &&
-      !SUPABASE_URL.includes("INSERISCI_QUI") &&
-      SUPABASE_ANON_KEY.length > 30 &&
-      !SUPABASE_ANON_KEY.includes("INSERISCI_QUI");
-
+    // La publishable key è progettata per essere usata nel browser.
+    // Non inserire mai qui service_role o secret keys.
+    const SUPABASE_URL = "https://ftkzjhjumgojmcvybzqu.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_0EU8yVrYfT2Zg8NWzUqxPA_UGWk2O9O";
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+    });
     const login = document.getElementById("login");
     const dashboard = document.getElementById("dashboard");
     const form = document.getElementById("loginForm");
     const submit = document.getElementById("submit");
     const message = document.getElementById("message");
-    const setupNote = document.getElementById("setupNote");
-    let supabaseClient = null;
 
     function showMessage(text) {
       message.textContent = text;
@@ -80,44 +70,29 @@
       dashboard.style.display = "block";
       document.getElementById("accountEmail").textContent = user.email || "Account amministratore";
     }
-
-    if (configured && window.supabase) {
-      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+    supabaseClient.auth.getSession().then(({data, error}) => {
+      if (!error && data.session) showDashboard(data.session.user);
+    });
+    form.addEventListener("submit", async event => {
+      event.preventDefault();
+      message.classList.remove("show");
+      submit.disabled = true;
+      submit.textContent = "Verifica in corso…";
+      const {data, error} = await supabaseClient.auth.signInWithPassword({
+        email: document.getElementById("email").value.trim(),
+        password: document.getElementById("password").value
       });
-      setupNote.style.display = "none";
-      supabaseClient.auth.getSession().then(({data, error}) => {
-        if (!error && data.session) showDashboard(data.session.user);
-      });
-    } else {
-      form.addEventListener("submit", event => {
-        event.preventDefault();
-        showMessage("Accesso non ancora attivato: prima collegheremo il progetto Supabase e creeremo l'account amministratore.");
-      });
-    }
-
-    if (supabaseClient) {
-      form.addEventListener("submit", async event => {
-        event.preventDefault();
-        message.classList.remove("show");
-        submit.disabled = true;
-        submit.textContent = "Verifica in corso…";
-        const {data, error} = await supabaseClient.auth.signInWithPassword({
-          email: document.getElementById("email").value.trim(),
-          password: document.getElementById("password").value
-        });
-        submit.disabled = false;
-        submit.textContent = "Accedi al pannello";
-        if (error) showMessage("Accesso non riuscito. Controlla email e password.");
-        else showDashboard(data.user);
-      });
-      document.getElementById("logout").addEventListener("click", async () => {
-        await supabaseClient.auth.signOut();
-        dashboard.style.display = "none";
-        login.style.display = "block";
-        form.reset();
-      });
-    }
+      submit.disabled = false;
+      submit.textContent = "Accedi al pannello";
+      if (error) showMessage("Accesso non riuscito. Controlla email e password e verifica che l'account sia stato creato in Supabase Authentication.");
+      else showDashboard(data.user);
+    });
+    document.getElementById("logout").addEventListener("click", async () => {
+      await supabaseClient.auth.signOut();
+      dashboard.style.display = "none";
+      login.style.display = "block";
+      form.reset();
+    });
   </script>
 </body>
 </html>
