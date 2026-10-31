@@ -60,7 +60,7 @@
     <div class="drawer-head"><h2>Il tuo carrello</h2><button class="close" id="closeCart" aria-label="Chiudi">×</button></div>
     <div class="cart-items" id="cartItems"></div>
     <div class="cart-total"><span>Totale prodotti</span><strong id="cartTotal">€ 0,00</strong></div>
-    <div class="checkout"><a class="primary" id="paypalButton" href="#" target="_blank" rel="noopener">Paga con PayPal</a><button class="secondary" id="whatsappButton">Ordina via WhatsApp</button></div>
+    <div class="checkout"><a class="primary" id="paypalButton" href="#" target="_blank" rel="noopener">Paga con PayPal</a><button class="secondary" id="whatsappButton">Richiedi ordine via WhatsApp</button></div>
     <p class="notice" id="checkoutNotice">I pagamenti e gli ordini saranno attivati dopo aver inserito i dati ufficiali del venditore, il link PayPal e il contatto WhatsApp. Le spese di spedizione verranno confermate prima del pagamento.</p>
   </aside>
   <div class="toast" id="toast"></div>
@@ -134,7 +134,7 @@
       paypal.href=ready?STORE.paypalMe.replace(/\/$/,"")+"/"+total.toFixed(2)+"EUR":"#";
       paypal.style.opacity=ready?"1":".45";paypal.style.pointerEvents=ready?"auto":"none";
       wa.disabled=!(cart.length&&STORE.whatsapp);wa.style.opacity=wa.disabled?".45":"1";
-      notice.textContent=ready?"Il pagamento PayPal apre il conto del venditore. Verifica sempre importo, prodotti e spedizione prima di confermare.": "Checkout non ancora attivo: prima di ricevere pagamenti inseriremo prezzi definitivi, link PayPal.Me e numero WhatsApp del negozio.";
+      notice.textContent=ready?"PayPal è pronto per il totale dei prodotti. Le spese di spedizione non sono incluse: concordale prima di pagare.":"PayPal si attiverà dopo la configurazione del link personale. Per WhatsApp inseriremo il numero ufficiale del negozio; la spedizione sarà concordata prima della conferma.";
     }
     function showToast(s){toast.textContent=s;toast.classList.add("show");setTimeout(()=>toast.classList.remove("show"),2100);}
     function openCart(){drawer.classList.add("open");overlay.classList.add("open");}
@@ -144,7 +144,19 @@
     document.querySelectorAll(".filter").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".filter").forEach(x=>x.classList.remove("active"));b.classList.add("active");renderProducts(b.dataset.filter);}));
     document.querySelectorAll("[data-jump]").forEach(a=>a.addEventListener("click",()=>{const f=a.dataset.jump;document.querySelectorAll(".filter").forEach(x=>{x.classList.toggle("active",x.dataset.filter===f);});renderProducts(f);}));
     document.getElementById("openCart").onclick=openCart;document.getElementById("closeCart").onclick=closeCart;overlay.onclick=closeCart;
-    document.getElementById("whatsappButton").onclick=()=>{if(!STORE.whatsapp)return;const lines=cart.map(x=>x.name+" - taglia "+x.size+" x"+x.qty).join("\n");const total=cart.every(x=>x.price!=null)?euro(cart.reduce((a,b)=>a+b.price*b.qty,0)):"prezzo da confermare";location.href="https://wa.me/"+STORE.whatsapp+"?text="+encodeURIComponent("Ciao, vorrei ordinare da JHAVÈ:\n"+lines+"\nTotale prodotti: "+total+"\nMi confermate disponibilità e spedizione?");};
+    document.getElementById("whatsappButton").onclick=()=>{
+      if(!STORE.whatsapp||!cart.length)return;
+      const lines=cart.map((x,i)=>{
+        const color=x.color_name?" · colore: "+x.color_name:"";
+        const unit=x.price==null?"prezzo da confermare":euro(x.price)+" cad.";
+        const subtotal=x.price==null?"":" · subtotale "+euro(x.price*x.qty);
+        return (i+1)+". "+x.name+color+" · taglia "+x.size+" · quantità "+x.qty+" · "+unit+subtotal;
+      }).join("\n");
+      const known=cart.every(x=>x.price!=null);
+      const total=known?euro(cart.reduce((a,b)=>a+b.price*b.qty,0)):"da confermare";
+      const message="Ciao, vorrei richiedere un ordine da JHAVÈ Official.\n\n"+lines+"\n\nTotale prodotti: "+total+"\nSpedizione: da concordare.\nMi confermate disponibilità, costo e tempi di consegna?\n\nGrazie.";
+      location.href="https://wa.me/"+STORE.whatsapp+"?text="+encodeURIComponent(message);
+    };
     document.getElementById("year").textContent=new Date().getFullYear();loadStoreProducts();renderCart();
   </script>
 </body>
