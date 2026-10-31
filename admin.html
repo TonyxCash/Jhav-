@@ -27,7 +27,7 @@ const SUPABASE_URL="https://ftkzjhjumgojmcvybzqu.supabase.co";
 const SUPABASE_KEY="sb_publishable_0EU8yVrYfT2Zg8NWzUqxPA_UGWk2O9O";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 const $=id=>document.getElementById(id);
-let currentUser=null,products=[];
+let currentUser=null,products=[],copiedImageUrl=null;
 function message(id,text){$(id).textContent=text;$(id).classList.add("show")}
 function clearMessage(id){$(id).classList.remove("show")}
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
@@ -45,14 +45,17 @@ async function loadProducts(){
 }
 function renderList(){
  if(!products.length){$("productList").innerHTML="<p class='muted'>Nessun prodotto. Crea la prima scheda.</p>";return}
- $("productList").innerHTML=products.map(p=>'<article class="product">'+(p.image_url?'<img src="'+esc(p.image_url)+'" alt="">':'<div class="placeholder">J</div>')+'<div><strong>'+esc(p.name)+'</strong><small>'+esc(p.category==="shirts"?"T-shirt":"Pantaloni")+' · '+euro(p.price)+' · '+(p.active?"Pubblicato":"Nascosto")+'<br>Taglie: '+esc((p.sizes||[]).join(", "))+'</small></div><div class="product-actions"><button type="button" data-edit="'+esc(p.id)+'" class="secondary">Modifica</button><button type="button" data-delete="'+esc(p.id)+'" class="danger">Elimina</button></div></article>').join("");
+ $("productList").innerHTML=products.map(p=>'<article class="product">'+(p.image_url?'<img src="'+esc(p.image_url)+'" alt="">':'<div class="placeholder">J</div>')+'<div><strong>'+esc(p.name)+'</strong><small>'+esc(p.category==="shirts"?"T-shirt":"Pantaloni")+' · '+euro(p.price)+' · '+(p.active?"Pubblicato":"Nascosto")+'<br>Taglie: '+esc((p.sizes||[]).join(", "))+'</small></div><div class="product-actions"><button type="button" data-edit="'+esc(p.id)+'" class="secondary">Modifica</button><button type="button" data-duplicate="'+esc(p.id)+'" class="secondary">Duplica</button><button type="button" data-delete="'+esc(p.id)+'" class="danger">Elimina</button></div></article>').join("");
 }
-function openEditor(p){
- $("productForm").reset();$("productId").value=p?.id||"";$("name").value=p?.name||"";$("slug").value=p?.slug||"";$("category").value=p?.category||"trousers";$("price").value=p?.price??"";$("description").value=p?.description||"";$("sizes").value=(p?.sizes||[]).join(", ");$("sortOrder").value=p?.sort_order??(products.length+1);$("active").value=String(p?.active??true);$("photo").value="";$("preview").style.display=p?.image_url?"block":"none";$("preview").src=p?.image_url||"";$("editorTitle").textContent=p?"Modifica prodotto":"Nuovo prodotto";$("editor").style.display="block";$("editor").scrollIntoView({behavior:"smooth",block:"start"});
+function openEditor(p,duplicate=false){
+ $("productForm").reset();copiedImageUrl=duplicate?(p?.image_url||null):null;$("productId").value=duplicate?"":(p?.id||"");$("name").value=p?(duplicate?p.name+" – nuovo colore":p.name):"";
+ let slug=p?.slug||"";if(duplicate){let n=2;while(products.some(x=>x.slug===slug+"-"+n))n++;slug=slug+"-"+n;}
+ $("slug").value=duplicate?slug:(p?.slug||"");$("category").value=p?.category||"trousers";$("price").value=p?.price??"";$("description").value=p?.description||"";$("sizes").value=(p?.sizes||[]).join(", ");$("sortOrder").value=duplicate?products.length+1:(p?.sort_order??(products.length+1));$("active").value=String(p?.active??true);$("photo").value="";$("preview").style.display=p?.image_url?"block":"none";$("preview").src=p?.image_url||"";$("editorTitle").textContent=duplicate?"Duplica prodotto · nuovo colore":(p?"Modifica prodotto":"Nuovo prodotto");$("editor").style.display="block";$("editor").scrollIntoView({behavior:"smooth",block:"start"});
 }
 $("newProduct").onclick=()=>openEditor(null);$("cancelEdit").onclick=()=>{$("editor").style.display="none"};
 $("productList").addEventListener("click",async e=>{
  const edit=e.target.closest("[data-edit]");if(edit){openEditor(products.find(p=>p.id===edit.dataset.edit));return}
+ const duplicate=e.target.closest("[data-duplicate]");if(duplicate){openEditor(products.find(p=>p.id===duplicate.dataset.duplicate),true);return}
  const del=e.target.closest("[data-delete]");if(del){const p=products.find(x=>x.id===del.dataset.delete);if(!p||!confirm('Eliminare "'+p.name+'"?'))return;
  const {error}=await db.from("products").delete().eq("id",p.id);if(error)message("notice","Eliminazione non riuscita: "+error.message);else{message("notice","Prodotto eliminato.");await loadProducts()}}
 });
@@ -61,6 +64,7 @@ $("productForm").addEventListener("submit",async e=>{
  e.preventDefault();clearMessage("notice");const btn=$("saveProduct");btn.disabled=true;btn.textContent="Salvataggio…";
  try{
  const id=$("productId").value;const payload={name:$("name").value.trim(),slug:$("slug").value.trim().toLowerCase(),category:$("category").value,description:$("description").value.trim(),price:$("price").value===""?null:Number($("price").value),sizes:$("sizes").value.split(",").map(x=>x.trim()).filter(Boolean),sort_order:Number($("sortOrder").value)||0,active:$("active").value==="true",updated_at:new Date().toISOString()};
+ if(!id&&copiedImageUrl)payload.image_url=copiedImageUrl;
  if(!payload.name||!payload.slug||!Number.isFinite(payload.price??0)||payload.price<0)throw new Error("Controlla nome, slug e prezzo.");
  let saved;
  if(id){const r=await db.from("products").update(payload).eq("id",id).select().single();if(r.error)throw r.error;saved=r.data}
