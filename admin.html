@@ -94,14 +94,17 @@ function buildAdminNavigation(){
  statisticsPage.insertAdjacentHTML("beforeend",'<p class="muted">Riepilogo degli ordini archiviati. Gli incassi considerano solo i pagamenti confermati.</p><div id="statisticsContent"></div>');
  const settingsPage=makePage("settings","Configurazione","Impostazioni");
  settingsPage.insertAdjacentHTML("beforeend",'<p class="muted">Informazioni operative e collegamenti principali del negozio.</p><div class="settings-list"><div class="settings-item"><strong>Negozio online</strong><a href="https://tonyxcash.github.io/Jhav-/" target="_blank" rel="noopener">Apri JHAVÈ Official</a></div><div class="settings-item"><strong>Account amministratore</strong><span id="settings-account" class="muted">Account collegato</span></div><div class="settings-item"><strong>Pagamenti e ordini</strong><span class="muted">Il cliente acquista senza registrarsi. Gli ordini PayPal vengono registrati dopo la conferma del pagamento.</span></div><div class="settings-item"><strong>Informazioni legali</strong><a href="https://tonyxcash.github.io/Jhav-/legal.html" target="_blank" rel="noopener">Apri la pagina legale</a><p class="muted">Completa i dati fiscali, aziendali, i contatti e le condizioni mancanti prima di avviare le vendite effettive.</p></div><div class="settings-item"><strong>Sicurezza</strong><span class="muted">Per cambiare password usa “Password dimenticata?” nella schermata di accesso. Non condividere le credenziali.</span></div></div>');
- const customersTitle=$("customersList").previousElementSibling;
- customersTitle.remove();$("customersList").remove();
- productsPage.appendChild($("productList"));
- editorPage.appendChild($("editor"));
+ const requiredNode=id=>{const node=$(id);if(!(node instanceof Node))throw new Error("Elemento HTML mancante: #"+id);return node;};
+ const productList=requiredNode("productList"),editor=requiredNode("editor"),ordersManager=requiredNode("ordersManager"),coverManager=requiredNode("coverManager"),ordersList=requiredNode("ordersList"),customersList=requiredNode("customersList");
+ const customersTitle=customersList.previousElementSibling;
+ if(!(customersTitle instanceof Node))throw new Error("Titolo Clienti non trovato prima di #customersList");
+ customersTitle.remove();customersList.remove();
+ productsPage.appendChild(productList);
+ editorPage.appendChild(editor);
  ordersPage.insertAdjacentHTML("beforeend",'<div class="admin-filter"><input id="orderSearch" type="search" placeholder="Cerca per ordine, cliente o email"></div>');
- ordersPage.appendChild($("ordersManager"));
- customersPage.appendChild(customersTitle);customersPage.appendChild($("customersList"));
- appearancePage.appendChild($("coverManager"));
+ ordersPage.appendChild(ordersManager);
+ customersPage.appendChild(customersTitle);customersPage.appendChild(customersList);
+ appearancePage.appendChild(coverManager);
  customersPage.insertAdjacentHTML("afterbegin",'<div class="admin-filter"><input id="customerSearch" type="search" placeholder="Cerca cliente per nome o email"></div>');
  layout.appendChild(nav);layout.appendChild(content);
  const mobileMenu=document.createElement("div");mobileMenu.className="admin-mobile-menu";
@@ -215,7 +218,9 @@ COVER_KEYS.forEach(key=>$("cover-"+key).addEventListener("change",e=>uploadCover
 function formatOrderDate(value){return value?new Date(value).toLocaleString("it-IT"):"—"}
 function orderItemsText(items){if(!Array.isArray(items))return "Dettagli non disponibili";return items.map(x=>esc(x.name||"Prodotto")+" · "+esc(x.color||"")+" · taglia "+esc(x.size||"—")+" × "+Number(x.quantity||0)).join("<br>")}
 async function loadOrders(){
- const list=$("ordersList"),customers=$("customersList");list.innerHTML="<p class='muted'>Caricamento ordini…</p>";customers.innerHTML="";
+ const list=$("ordersList"),customers=$("customersList");
+ if(!list||!customers){throw new Error("Sezione ordini non pronta: manca #ordersList o #customersList dopo la creazione del menu.");}
+ list.innerHTML="<p class='muted'>Caricamento ordini…</p>";customers.innerHTML="";
  let orders=[],start=0,batchSize=500;
  while(true){const {data,error}=await db.from("store_orders").select("id,paypal_order_id,amount,currency,items,status,created_at,paid_at,customer_name,customer_email,shipping_address,fulfillment_status").order("created_at",{ascending:false}).range(start,start+batchSize-1);if(error){list.innerHTML="";$("ordersSummary").textContent="Impossibile caricare gli ordini: "+error.message;return}const batch=data||[];orders=orders.concat(batch);if(batch.length<batchSize)break;start+=batchSize;}adminOrders=orders;updateAdminStats();$("ordersSummary").textContent=orders.length+" ordini in archivio · "+orders.filter(x=>x.status==="paid").length+" pagati";
  if(!orders.length){list.innerHTML="<p class='muted'>Ancora nessun ordine PayPal.</p>";customers.innerHTML="<p class='muted'>I clienti appariranno dopo il primo pagamento.</p>";return}
