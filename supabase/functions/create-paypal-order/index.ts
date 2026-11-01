@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
 
     const ids = [...new Set(normalized.map((x: any) => x.id))];
     const query = new URLSearchParams({
-      select: "id,name,price,sizes,color_name,active,stock_quantity",
+      select: "id,name,price,sizes,color_name,active",
       id: "in.(" + ids.join(",") + ")",
       active: "eq.true",
     });
@@ -59,11 +59,16 @@ Deno.serve(async (req) => {
     if (!productsResponse.ok || !Array.isArray(products)) throw new Error("Impossibile verificare il catalogo.");
 
     const byId = new Map(products.map((p: any) => [String(p.id), p]));
+    const stockResponse = await fetch(supabaseUrl + "/rest/v1/product_size_stock?select=product_id,size,quantity&product_id=in.(" + ids.join(",") + ")", { headers: { apikey: serviceKey, Authorization: "Bearer " + serviceKey } });
+    const stockRows = await stockResponse.json();
+    if (!stockResponse.ok || !Array.isArray(stockRows)) throw new Error("Impossibile verificare le disponibilità per taglia.");
+    const stockMap = new Map(stockRows.map((row: any) => [String(row.product_id) + "|" + row.size, Number(row.quantity)]));
     let total = 0;
     const snapshot = normalized.map((item: any) => {
       const p: any = byId.get(item.id);
       if (!p || !Array.isArray(p.sizes) || !p.sizes.includes(item.size)) throw new Error("Un prodotto o una taglia non è più disponibile. Aggiorna il carrello.");
-      if (!Number.isInteger(Number(p.stock_quantity)) || Number(p.stock_quantity) < item.qty) throw new Error("Scorte insufficienti per " + p.name + ". Disponibili: " + Number(p.stock_quantity || 0) + ".");
+      const available = Number(stockMap.get(item.id + "|" + item.size) ?? 0);
+      if (!Number.isInteger(available) || available < item.qty) throw new Error("Scorte insufficienti per " + p.name + " taglia " + item.size + ". Disponibili: " + available + ".");
       const price = Number(p.price);
       if (!Number.isFinite(price) || price <= 0) throw new Error("Un prodotto non ha un prezzo valido. Contatta JHAVÈ.");
       total += price * item.qty;
@@ -90,14 +95,15 @@ Deno.serve(async (req) => {
     const order = await orderResponse.json();
     if (!orderResponse.ok || !order.id) throw new Error(order?.message || "PayPal non ha creato l'ordine.");
 
-    const save = await fetch(supabaseUrl + "/rest/v1/store_orders", {
+    const reserve = await fetch(supabaseUrl + "/rest/v1/rpc/reserve_jhave_order", {
       method: "POST",
-      headers: { apikey: serviceKey, Authorization: "Bearer " + serviceKey, "Content-Type": "application/json", Prefer: "return=minimal" },
-      body: JSON.stringify({ paypal_order_id: order.id, amount: total, currency: "EUR", items: snapshot, status: "pending" }),
+      headers: { apikey: serviceKey, Authorization: "Bearer " + serviceKey, "Content-Type": "application/json" },
+      body: JSON.stringify({ p_paypal_order_id: order.id, p_amount: total, p_items: snapshot }),
     });
-    if (!save.ok) {
+    if (!reserve.ok) {
       await fetch(base + "/v2/checkout/orders/" + order.id, { headers: { Authorization: "Bearer " + token } }).catch(() => null);
-      throw new Error("Non è stato possibile registrare l'ordine. Riprova.");
+      const failure = await reserve.text();
+      throw new Error(failure.includes("Scorte insufficienti") ? "Una taglia è appena terminata. Aggiorna il carrello." : "Non è stato possibile riservare le taglie. Riprova.");
     }
     return json({ id: order.id, amount: total.toFixed(2) });
   } catch (error) {
