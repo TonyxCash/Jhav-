@@ -19,7 +19,7 @@
 .admin-shortcuts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:20px}
 .admin-shortcut{border:1px solid var(--line);padding:16px;text-align:left;background:#fff;color:var(--ink);letter-spacing:0;text-transform:none;font-size:12px}
 .admin-shortcut b{display:block;font:18px var(--serif);margin-bottom:6px}
-.admin-page .products{margin-top:14px}
+.admin-page .products{margin-top:14px}.admin-filter{margin:14px 0}.admin-filter input{background:#fff}.stats-table{width:100%;border-collapse:collapse;margin-top:14px;font-size:12px}.stats-table th,.stats-table td{padding:11px 8px;border-bottom:1px solid var(--line);text-align:left}.settings-list{display:grid;gap:10px;margin-top:16px}.settings-item{border:1px solid var(--line);padding:15px;background:#fff}.settings-item strong{display:block;font:18px var(--serif);margin-bottom:5px}.settings-item a{color:#806333}
 @media(max-width:760px){body{padding:10px}.admin-layout{grid-template-columns:1fr;gap:10px}.admin-nav{position:static;display:flex;overflow-x:auto;gap:4px;padding:7px}.admin-nav .nav-label{display:none}.admin-nav button{width:auto;min-width:max-content;margin:0;padding:11px 12px}.admin-stats{grid-template-columns:1fr 1fr}.admin-shortcuts{grid-template-columns:1fr}.admin-page{padding:15px}}
 @media(max-width:420px){.admin-stats{grid-template-columns:1fr 1fr}.admin-stat{padding:13px}.admin-stat strong{font-size:23px}}
 </style></head><body>
@@ -74,7 +74,9 @@ function buildAdminNavigation(){
  '<button type="button" data-page="orders">▣ <span>Ordini</span></button>'+
  '<button type="button" data-page="customers">♙ <span>Clienti</span></button>'+
  '<button type="button" data-page="stock">▦ <span>Magazzino</span></button>'+
- '<button type="button" data-page="appearance">◈ <span>Aspetto sito</span></button>';
+ '<button type="button" data-page="appearance">◈ <span>Aspetto sito</span></button>'+
+ '<button type="button" data-page="statistics">▥ <span>Statistiche</span></button>'+
+ '<button type="button" data-page="settings">⚙ <span>Impostazioni</span></button>';
  const content=document.createElement("div");content.className="admin-content";
  const makePage=(id,eyebrow,title)=>{const el=document.createElement("section");el.className="admin-page";el.id="page-"+id;el.innerHTML='<div class="admin-page-head"><div class="eyebrow">'+eyebrow+'</div><h2>'+title+'</h2></div>';content.appendChild(el);return el;};
  const overview=makePage("overview","Riepilogo negozio","Panoramica");
@@ -87,6 +89,10 @@ function buildAdminNavigation(){
  const stockPage=makePage("stock","Disponibilità","Magazzino");
  stockPage.insertAdjacentHTML("beforeend",'<p class="muted">Controlla rapidamente le quantità disponibili per taglia. Per modificare le quantità apri la scheda del prodotto.</p><div id="stockOverview" class="products"></div>');
  const appearancePage=makePage("appearance","Personalizzazione","Aspetto del sito");
+ const statisticsPage=makePage("statistics","Andamento negozio","Statistiche");
+ statisticsPage.insertAdjacentHTML("beforeend",'<p class="muted">Riepilogo degli ordini archiviati. Gli incassi considerano solo i pagamenti confermati.</p><div id="statisticsContent"></div>');
+ const settingsPage=makePage("settings","Configurazione","Impostazioni");
+ settingsPage.insertAdjacentHTML("beforeend",'<p class="muted">Informazioni operative e collegamenti principali del negozio.</p><div class="settings-list"><div class="settings-item"><strong>Negozio online</strong><a href="https://tonyxcash.github.io/Jhav-/" target="_blank" rel="noopener">Apri JHAVÈ Official</a></div><div class="settings-item"><strong>Account amministratore</strong><span id="settings-account" class="muted">Account collegato</span></div><div class="settings-item"><strong>Pagamenti e ordini</strong><span class="muted">Il cliente acquista senza registrarsi. Gli ordini PayPal vengono registrati dopo la conferma del pagamento.</span></div><div class="settings-item"><strong>Informazioni legali</strong><a href="https://tonyxcash.github.io/Jhav-/legal.html" target="_blank" rel="noopener">Apri la pagina legale</a><p class="muted">Completa i dati fiscali, aziendali, i contatti e le condizioni mancanti prima di avviare le vendite effettive.</p></div><div class="settings-item"><strong>Sicurezza</strong><span class="muted">Per cambiare password usa “Password dimenticata?” nella schermata di accesso. Non condividere le credenziali.</span></div></div>');
  const customersTitle=$("customersList").previousElementSibling;
  customersTitle.remove();$("customersList").remove();
  productsPage.appendChild($("productList"));
@@ -94,7 +100,12 @@ function buildAdminNavigation(){
  ordersPage.appendChild($("ordersManager"));
  customersPage.appendChild(customersTitle);customersPage.appendChild($("customersList"));
  appearancePage.appendChild($("coverManager"));
+ ordersPage.insertAdjacentHTML("beforeend",'<div class="admin-filter"><input id="orderSearch" type="search" placeholder="Cerca per ordine, cliente o email"></div>');
+ customersPage.insertAdjacentHTML("afterbegin",'<div class="admin-filter"><input id="customerSearch" type="search" placeholder="Cerca cliente per nome o email"></div>');
  layout.appendChild(nav);layout.appendChild(content);dashboard.appendChild(layout);
+ $("settings-account").textContent="Account collegato: "+(currentUser?.email||"non disponibile");
+ $("orderSearch").addEventListener("input",()=>filterAdminCards("ordersList",$("orderSearch").value));
+ $("customerSearch").addEventListener("input",()=>filterAdminCards("customersList",$("customerSearch").value));
  const showPage=id=>{
   content.querySelectorAll(".admin-page").forEach(p=>p.classList.toggle("active",p.id==="page-"+id));
   nav.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===id));
@@ -117,6 +128,23 @@ function renderStockOverview(){
   return '<article class="product" style="grid-template-columns:1fr"><div class="toolbar"><strong>'+esc(p.name)+'</strong><span class="muted">'+total+' pezzi totali</span></div><div>'+details+'</div><div><button class="secondary" type="button" data-stock-edit="'+esc(p.id)+'">Modifica disponibilità</button></div></article>';
  }).join("");
 }
+function filterAdminCards(containerId,query){
+ const q=String(query||"").trim().toLocaleLowerCase("it");
+ $(containerId).querySelectorAll(".product").forEach(card=>{card.hidden=!!q&&!card.textContent.toLocaleLowerCase("it").includes(q);});
+}
+function renderStatistics(){
+ const host=$("statisticsContent");if(!host)return;
+ const paid=adminOrders.filter(o=>o.status==="paid");
+ const total=paid.reduce((s,o)=>s+(Number(o.amount)||0),0);
+ const average=paid.length?total/paid.length:0;
+ const now=new Date();
+ const current=paid.filter(o=>{const d=new Date(o.paid_at||o.created_at);return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();});
+ const monthTotal=current.reduce((s,o)=>s+(Number(o.amount)||0),0);
+ const grouped=new Map();
+ paid.forEach(o=>{const d=new Date(o.paid_at||o.created_at);if(Number.isNaN(d.getTime()))return;const key=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");grouped.set(key,(grouped.get(key)||0)+(Number(o.amount)||0));});
+ const months=[...grouped.entries()].sort((a,b)=>b[0].localeCompare(a[0])).slice(0,12);
+ host.innerHTML='<div class="admin-stats"><div class="admin-stat"><span>Incasso pagato complessivo</span><strong>'+euro(total)+'</strong></div><div class="admin-stat"><span>Ordini pagati</span><strong>'+paid.length+'</strong></div><div class="admin-stat"><span>Valore medio ordine</span><strong>'+euro(average)+'</strong></div><div class="admin-stat"><span>Incasso mese corrente</span><strong>'+euro(monthTotal)+'</strong></div><div class="admin-stat"><span>Ordini mese corrente</span><strong>'+current.length+'</strong></div><div class="admin-stat"><span>Ordini in archivio</span><strong>'+adminOrders.length+'</strong></div></div><h3 style="font:22px var(--serif);font-weight:400;margin:24px 0 8px">Incassi per mese</h3>'+(months.length?'<table class="stats-table"><thead><tr><th>Mese</th><th>Incasso pagato</th></tr></thead><tbody>'+months.map(([k,v])=>'<tr><td>'+k+'</td><td>'+euro(v)+'</td></tr>').join("")+'</tbody></table>':'<p class="muted">Non ci sono ancora ordini pagati da riepilogare.</p>')+'<p class="muted" style="margin-top:14px">Dati ricavati dagli ordini registrati: non costituiscono un rendiconto contabile o fiscale.</p>';
+}
 function updateAdminStats(){
  if($("stat-products"))$("stat-products").textContent=products.length;
  if($("stat-orders"))$("stat-orders").textContent=adminOrders.length;
@@ -124,6 +152,7 @@ function updateAdminStats(){
  if($("stat-paid"))$("stat-paid").textContent=paid.length;
  if($("stat-customers"))$("stat-customers").textContent=new Set(adminOrders.map(o=>(o.customer_email||"").trim().toLowerCase()).filter(Boolean)).size;
  if($("stat-revenue"))$("stat-revenue").textContent=euro(paid.reduce((sum,o)=>sum+Number(o.amount||0),0));
+ renderStatistics();
 }
 
 async function enter(user){
@@ -177,9 +206,8 @@ function formatOrderDate(value){return value?new Date(value).toLocaleString("it-
 function orderItemsText(items){if(!Array.isArray(items))return "Dettagli non disponibili";return items.map(x=>esc(x.name||"Prodotto")+" · "+esc(x.color||"")+" · taglia "+esc(x.size||"—")+" × "+Number(x.quantity||0)).join("<br>")}
 async function loadOrders(){
  const list=$("ordersList"),customers=$("customersList");list.innerHTML="<p class='muted'>Caricamento ordini…</p>";customers.innerHTML="";
- const {data,error}=await db.from("store_orders").select("id,paypal_order_id,amount,currency,items,status,created_at,paid_at,customer_name,customer_email,shipping_address,fulfillment_status").order("created_at",{ascending:false}).limit(200);
- if(error){list.innerHTML="";$("ordersSummary").textContent="Impossibile caricare gli ordini: "+error.message;return}
- const orders=data||[];adminOrders=orders;updateAdminStats();$("ordersSummary").textContent=orders.length+" ordini registrati · "+orders.filter(x=>x.status==="paid").length+" pagati";
+ let orders=[],start=0,batchSize=500;
+ while(true){const {data,error}=await db.from("store_orders").select("id,paypal_order_id,amount,currency,items,status,created_at,paid_at,customer_name,customer_email,shipping_address,fulfillment_status").order("created_at",{ascending:false}).range(start,start+batchSize-1);if(error){list.innerHTML="";$("ordersSummary").textContent="Impossibile caricare gli ordini: "+error.message;return}const batch=data||[];orders=orders.concat(batch);if(batch.length<batchSize)break;start+=batchSize;}adminOrders=orders;updateAdminStats();$("ordersSummary").textContent=orders.length+" ordini in archivio · "+orders.filter(x=>x.status==="paid").length+" pagati";
  if(!orders.length){list.innerHTML="<p class='muted'>Ancora nessun ordine PayPal.</p>";customers.innerHTML="<p class='muted'>I clienti appariranno dopo il primo pagamento.</p>";return}
  list.innerHTML=orders.map(o=>{const address=o.shipping_address?.address||{};const addressText=[address.address_line_1,address.address_line_2,address.admin_area_2,address.postal_code,address.country_code].filter(Boolean).map(esc).join(", ");return '<article class="product" style="grid-template-columns:1fr;align-items:start"><div><strong>Ordine '+esc(o.paypal_order_id)+'</strong><small>'+formatOrderDate(o.created_at)+' · '+euro(o.amount)+' · pagamento: '+esc(o.status)+'</small><p style="font-size:12px;line-height:1.7;margin:9px 0"><b>'+esc(o.customer_name||"Cliente PayPal")+'</b><br>'+esc(o.customer_email||"Email non fornita")+'<br>'+ (addressText||"Indirizzo non restituito da PayPal")+'</p><small>'+orderItemsText(o.items)+'</small><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px"><label for="fulfill-'+esc(o.id)+'">Gestione:</label><select id="fulfill-'+esc(o.id)+'" data-order-status="'+esc(o.id)+'" style="max-width:190px;padding:9px;border:1px solid var(--line)"><option value="new" '+(o.fulfillment_status==="new"?"selected":"")+'>Nuovo</option><option value="processing" '+(o.fulfillment_status==="processing"?"selected":"")+'>In preparazione</option><option value="shipped" '+(o.fulfillment_status==="shipped"?"selected":"")+'>Spedito</option><option value="delivered" '+(o.fulfillment_status==="delivered"?"selected":"")+'>Consegnato</option><option value="cancelled" '+(o.fulfillment_status==="cancelled"?"selected":"")+'>Annullato</option></select><span class="muted" id="fulfill-msg-'+esc(o.id)+'"></span></div></div></article>'}).join("");
  const map=new Map();orders.filter(o=>o.customer_email).forEach(o=>{const key=o.customer_email.toLowerCase();if(!map.has(key))map.set(key,{name:o.customer_name,email:o.customer_email,count:0,total:0,last:o.created_at});const c=map.get(key);c.count++;if(o.status==="paid")c.total+=Number(o.amount)||0;if(new Date(o.created_at)>new Date(c.last))c.last=o.created_at;});
