@@ -222,19 +222,19 @@
     const cart = [];
     const productsEl=document.getElementById("products"),countEl=document.getElementById("cartCount"),itemsEl=document.getElementById("cartItems"),totalEl=document.getElementById("cartTotal"),drawer=document.getElementById("drawer"),overlay=document.getElementById("overlay"),toast=document.getElementById("toast");
     function productCard(p){
-      const id=escapeHTML(p.id), name=escapeHTML(p.name), category=escapeHTML(p.category);
+      const id=escapeHTML(p.id), name=escapeHTML(p.name), category=escapeHTML(p.category), soldOut=Number(p.stock_quantity??0)<=0;
       const images=Array.isArray(p.images)&&p.images.length?p.images:(p.image?[p.image]:[]);
       const img=images.length?'<div class="product-gallery" data-gallery>'+images.map((url,i)=>'<img src="'+escapeHTML(url)+'" alt="'+name+' · foto '+(i+1)+'" class="'+(i===0?'is-active':'')+'" loading="lazy">').join('')+(images.length>1?'<button type="button" class="gallery-arrow prev" data-gallery-prev aria-label="Foto precedente">‹</button><button type="button" class="gallery-arrow next" data-gallery-next aria-label="Foto successiva">›</button><span class="gallery-count">1 / '+images.length+'</span><span class="gallery-dots">'+images.map((_,i)=>'<i class="'+(i===0?'active':'')+'"></i>').join('')+'</span>':'')+'</div>':'<div class="image-placeholder"><b>JHAVÈ</b><small>Foto prodotto da caricare</small></div>';
       const price=p.price==null?"Prezzo da definire":euro(p.price);
       const siblings=p.variant_group?PRODUCTS.filter(x=>x.variant_group===p.variant_group):[];
       const colorLinks=siblings.length>1?'<div class="variant-links"><span>Altri colori:</span>'+siblings.map(x=>'<button type="button" class="variant-link '+(x.id===p.id?'selected':'')+'" data-variant="'+escapeHTML(x.id)+'">'+escapeHTML(x.color_name||x.name.replace(/^.*[–-]\s*/,''))+'</button>').join('')+'</div>':'';
-      return '<article class="product" id="product-'+id+'" data-category="'+category+'"><div class="product-image">'+img+'</div><div class="product-info"><div class="product-top"><div class="product-name">'+name+'</div><div class="price">'+price+'</div></div><p class="product-desc">'+escapeHTML(p.description)+'</p>'+colorLinks+'<div class="product-actions"><select aria-label="Taglia per '+name+'" id="size-'+id+'"><option value="">Seleziona taglia</option>'+p.sizes.map(s=>'<option>'+escapeHTML(s)+'</option>').join('')+'</select><button class="add" data-id="'+id+'">Aggiungi</button></div></div></article>';
+      return '<article class="product" id="product-'+id+'" data-category="'+category+'"><div class="product-image">'+img+'</div><div class="product-info"><div class="product-top"><div class="product-name">'+name+'</div><div class="price">'+price+'</div></div><p class="product-desc">'+escapeHTML(p.description)+'</p>'+colorLinks+'<div class="product-actions">'+(soldOut?'<span class="sold-out">SOLD OUT</span>':'<select aria-label="Taglia per '+name+'" id="size-'+id+'"><option value="">Seleziona taglia</option>'+p.sizes.map(s=>'<option>'+escapeHTML(s)+'</option>').join('')+'</select><button class="add" data-id="'+id+'">Aggiungi</button>')+'</div></div></article>';
     }
     function renderProducts(filter="all"){
       const visible=PRODUCTS.filter(p=>filter==="all"||p.category===filter);
       productsEl.innerHTML=visible.length?visible.map(productCard).join(""):'<p class="empty-products">Al momento non ci sono prodotti pubblicati in questa categoria. Torna a trovarci presto.</p>';
     }
-    const variantHighlightStyle=document.createElement("style");variantHighlightStyle.textContent=".product.variant-target{outline:2px solid #b99a61;outline-offset:5px;transition:outline .2s}";document.head.appendChild(variantHighlightStyle);
+    const variantHighlightStyle=document.createElement("style");variantHighlightStyle.textContent=".product.variant-target{outline:2px solid #b99a61;outline-offset:5px;transition:outline .2s}.sold-out{display:inline-flex;align-items:center;justify-content:center;padding:12px 18px;border:1px solid #b99a61;color:#8a6d3b;font-size:10px;letter-spacing:.16em;font-weight:700}";document.head.appendChild(variantHighlightStyle);
     function setGalleryIndex(gallery,next){
       const imgs=[...gallery.querySelectorAll("img")],dots=[...gallery.querySelectorAll(".gallery-dots i")];if(imgs.length<2)return;
       const current=imgs.findIndex(img=>img.classList.contains("is-active")),index=(next+imgs.length)%imgs.length;
@@ -270,10 +270,10 @@
     async function loadStoreProducts(){
       try {
         const client=window.supabase.createClient("https://ftkzjhjumgojmcvybzqu.supabase.co","sb_publishable_0EU8yVrYfT2Zg8NWzUqxPA_UGWk2O9O");
-        const {data,error}=await client.from("products").select("id,slug,name,category,description,price,sizes,image_url,image_urls,active,sort_order,color_name,variant_group").eq("active",true).order("sort_order",{ascending:true});
+        const {data,error}=await client.from("products").select("id,slug,name,category,description,price,sizes,stock_quantity,image_url,image_urls,active,sort_order,color_name,variant_group").eq("active",true).order("sort_order",{ascending:true});
         if(error) throw error;
         const fallbackImages={"jeans-sartoriale":"assets/jeans.jpg","pantalone-sartoriale":"assets/pantaloni-sartoriali.jpg","tshirt-filo-scozia":"assets/tshirt-filo-scozia.jpg"};
-        PRODUCTS.splice(0,PRODUCTS.length,...(Array.isArray(data)?data:[]).map(p=>({id:p.id,name:p.name,category:p.category,color_name:p.color_name||"",variant_group:p.variant_group||null,description:p.description||"",price:p.price==null?null:Number(p.price),sizes:Array.isArray(p.sizes)?p.sizes:[],image:p.image_url||fallbackImages[p.slug]||"",images:Array.isArray(p.image_urls)&&p.image_urls.length?p.image_urls:(p.image_url?[p.image_url]:[]),label:p.category==="shirts"?"T-shirt":p.category==="jeans"?"Jeans":"Pantaloni"})));
+        PRODUCTS.splice(0,PRODUCTS.length,...(Array.isArray(data)?data:[]).map(p=>({id:p.id,name:p.name,category:p.category,color_name:p.color_name||"",variant_group:p.variant_group||null,description:p.description||"",price:p.price==null?null:Number(p.price),sizes:Array.isArray(p.sizes)?p.sizes:[],stock_quantity:Number(p.stock_quantity??0),image:p.image_url||fallbackImages[p.slug]||"",images:Array.isArray(p.image_urls)&&p.image_urls.length?p.image_urls:(p.image_url?[p.image_url]:[]),label:p.category==="shirts"?"T-shirt":p.category==="jeans"?"Jeans":"Pantaloni"})));
       } catch(error) {
         console.warn("Catalogo remoto non disponibile; uso il catalogo locale.",error);
       }
@@ -412,7 +412,7 @@
     function showToast(s){toast.textContent=s;toast.classList.add("show");setTimeout(()=>toast.classList.remove("show"),2100);}
     function openCart(){drawer.classList.add("open");overlay.classList.add("open");}
     function closeCart(){drawer.classList.remove("open");overlay.classList.remove("open");}
-    productsEl.addEventListener("click",e=>{const b=e.target.closest("[data-id]");if(!b)return;const p=PRODUCTS.find(x=>x.id===b.dataset.id),size=document.getElementById("size-"+p.id).value;if(!size){showToast("Seleziona prima una taglia");return;}const old=cart.find(x=>x.id===p.id&&x.size===size);if(old)old.qty++;else cart.push({...p,size,qty:1});renderCart();showToast("Aggiunto al carrello");});
+    productsEl.addEventListener("click",e=>{const b=e.target.closest("[data-id]");if(!b)return;const p=PRODUCTS.find(x=>x.id===b.dataset.id);if(!p||Number(p.stock_quantity??0)<=0){showToast("Prodotto esaurito");return;}const size=document.getElementById("size-"+p.id).value;if(!size){showToast("Seleziona prima una taglia");return;}const old=cart.find(x=>x.id===p.id&&x.size===size);if(old){if(old.qty>=Number(p.stock_quantity??0)){showToast("Disponibilità massima raggiunta");return;}old.qty++;}else cart.push({...p,size,qty:1});renderCart();showToast("Aggiunto al carrello");});
     itemsEl.addEventListener("click",e=>{const b=e.target.closest("[data-remove]");if(b){cart.splice(Number(b.dataset.remove),1);renderCart();}});
     document.querySelectorAll(".filter").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".filter").forEach(x=>x.classList.remove("active"));b.classList.add("active");renderProducts(b.dataset.filter);}));
     const sideMenu=document.getElementById("sideMenu"),sideMenuOverlay=document.getElementById("sideMenuOverlay"),openSideMenu=document.getElementById("openSideMenu");
