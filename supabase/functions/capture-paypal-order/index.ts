@@ -56,12 +56,12 @@ Deno.serve(async (req) => {
       throw new Error("PayPal non ha confermato il pagamento dell'importo previsto.");
     }
 
-    const update = await fetch(supabaseUrl + "/rest/v1/store_orders?paypal_order_id=eq." + encodeURIComponent(orderID), {
-      method: "PATCH",
-      headers: { ...dbHeaders, "Content-Type": "application/json", Prefer: "return=minimal" },
-      body: JSON.stringify({ status: "paid", paid_at: new Date().toISOString(), payment_capture_id: payment.id }),
+    const finalize = await fetch(supabaseUrl + "/rest/v1/rpc/finalize_jhave_paid_order", {
+      method: "POST",
+      headers: { ...dbHeaders, "Content-Type": "application/json" },
+      body: JSON.stringify({ p_paypal_order_id: orderID, p_capture_id: payment.id }),
     });
-    if (!update.ok) throw new Error("Pagamento ricevuto, ma aggiornamento ordine non riuscito. Contatta l'assistenza.");
+    if (!finalize.ok) throw new Error("Pagamento ricevuto, ma non è stato possibile aggiornare le scorte. Contatta JHAVÈ con il numero ordine " + orderID + ".");
     return json({ status: "COMPLETED", captureId: payment.id });
   } catch (error) {
     return json({ error: error instanceof Error ? error.message : "Errore durante la conferma del pagamento." }, 400);
