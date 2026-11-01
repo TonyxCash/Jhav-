@@ -135,15 +135,47 @@
       .nav-dropdown-menu{right:-8px;left:auto;top:calc(100% + 12px);min-width:220px;width:220px;padding:6px}
       .nav-dropdown-menu a{padding:13px 12px;font-size:10px;letter-spacing:.1em}
     }
+
+    /* Header centrato con menu laterale */
+    header.site-header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;justify-items:center;position:sticky}
+    header.site-header .menu-toggle{justify-self:start;display:flex;flex-direction:column;justify-content:center;gap:5px;width:42px;height:42px;padding:9px;border:1px solid #d8c9aa;background:transparent}
+    .menu-toggle span{display:block;width:21px;height:1.5px;background:#24231f}
+    header.site-header .brand{grid-column:2;grid-row:1;text-align:center;white-space:nowrap}
+    header.site-header .cart-icon-button{grid-column:3;grid-row:1;justify-self:end}
+    header.site-header nav{display:none!important}
+    .side-menu-overlay{position:fixed;inset:0;background:rgba(18,18,16,.42);z-index:35;opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}
+    .side-menu{position:fixed;z-index:36;left:0;top:0;height:100dvh;width:min(330px,84vw);padding:26px 25px;background:#fbfaf7;box-shadow:18px 0 50px rgba(0,0,0,.14);transform:translateX(-105%);transition:transform .28s ease;display:flex;flex-direction:column}
+    .side-menu.open{transform:translateX(0)}
+    .side-menu-overlay.open{opacity:1;visibility:visible}
+    .side-menu-head{display:flex;justify-content:space-between;align-items:center;padding-bottom:24px;border-bottom:1px solid #e8e0d1;font:22px Georgia,serif;letter-spacing:.12em;color:#a98a54}
+    .side-menu-head small{display:block;margin-top:5px;font:8px Arial,sans-serif;letter-spacing:.35em;color:#77736a}
+    .side-menu-head button{border:0;background:transparent;font-size:30px;color:#555}
+    .side-menu-links{display:grid;gap:0;padding-top:16px}
+    .side-menu-links a{padding:17px 4px;border-bottom:1px solid #eee9df;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+    .side-menu-links a:hover{color:#a98a54}
+    @media(max-width:760px){header.site-header{height:72px;padding-inline:16px;grid-template-columns:1fr auto 1fr}.site-header .brand{font-size:25px}.site-header .brand small{font-size:7px}.site-header .menu-toggle{width:38px;height:38px}.site-header .cart-icon-button{min-width:46px;padding:8px}.site-header .cart-symbol{font-size:19px}}
+    @media(max-width:380px){.site-header .brand{font-size:22px}.site-header .brand small{font-size:7px}}
   </style>
 </head>
 <body>
   <div class="announcement">JHAVÈ OFFICIAL · ABBIGLIAMENTO UOMO</div>
-  <header>
+  <header class="site-header">
+    <button class="menu-toggle" id="openSideMenu" type="button" aria-label="Apri il menu" aria-expanded="false"><span></span><span></span><span></span></button>
     <a class="brand" href="#">JHAVÈ<small>OFFICIAL</small></a>
-    <nav><a href="#collezioni">Collezioni</a><div class="nav-dropdown" id="clothingMenu"><button class="nav-dropdown-trigger" id="clothingMenuTrigger" type="button" aria-expanded="false">Capi</button><div class="nav-dropdown-menu"><a href="#shop" data-menu-filter="jeans">Jeans</a><a href="#shop" data-menu-filter="trousers">Pantaloni sartoriali</a><a href="#shop" data-menu-filter="shirts">T-shirt</a><a href="#shop" data-menu-filter="all">Tutti i capi</a></div></div><a href="#shop">Shop</a><a href="#storia">Il brand</a></nav>
     <button class="cart-toggle cart-icon-button" id="openCart" type="button" aria-label="Apri il carrello" title="Carrello"><span class="cart-symbol" aria-hidden="true">🛒</span><span class="cart-count" id="cartCount">0</span></button>
   </header>
+  <div class="side-menu-overlay" id="sideMenuOverlay"></div>
+  <aside class="side-menu" id="sideMenu" aria-label="Menu principale" aria-hidden="true">
+    <div class="side-menu-head"><span>JHAVÈ <small>MENU</small></span><button type="button" id="closeSideMenu" aria-label="Chiudi menu">×</button></div>
+    <div class="side-menu-links">
+      <a href="#collezioni">Collezioni</a>
+      <a href="#shop" data-menu-filter="jeans">Jeans</a>
+      <a href="#shop" data-menu-filter="trousers">Pantaloni sartoriali</a>
+      <a href="#shop" data-menu-filter="shirts">T-shirt</a>
+      <a href="#shop" data-menu-filter="all">Tutti i capi</a>
+      <a href="#storia">Il brand</a>
+    </div>
+  </aside>
   <main>
     <section class="hero">
       <div class="hero-copy"><span class="eyebrow">Menswear · Made in Italy</span><h1>Lo stile<br>ha carattere.</h1><p>Linee curate, dettagli sartoriali e materiali selezionati. Scopri la collezione uomo JHAVÈ.</p><a class="primary" href="#shop">Scopri la collezione&nbsp; ↗</a></div>
@@ -383,10 +415,14 @@
     productsEl.addEventListener("click",e=>{const b=e.target.closest("[data-id]");if(!b)return;const p=PRODUCTS.find(x=>x.id===b.dataset.id),size=document.getElementById("size-"+p.id).value;if(!size){showToast("Seleziona prima una taglia");return;}const old=cart.find(x=>x.id===p.id&&x.size===size);if(old)old.qty++;else cart.push({...p,size,qty:1});renderCart();showToast("Aggiunto al carrello");});
     itemsEl.addEventListener("click",e=>{const b=e.target.closest("[data-remove]");if(b){cart.splice(Number(b.dataset.remove),1);renderCart();}});
     document.querySelectorAll(".filter").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".filter").forEach(x=>x.classList.remove("active"));b.classList.add("active");renderProducts(b.dataset.filter);}));
-    const clothingMenu=document.getElementById("clothingMenu"),clothingTrigger=document.getElementById("clothingMenuTrigger");
-    clothingTrigger?.addEventListener("click",()=>{const open=clothingMenu.classList.toggle("open");clothingTrigger.setAttribute("aria-expanded",String(open));});
-    document.querySelectorAll("[data-menu-filter]").forEach(link=>link.addEventListener("click",()=>{const filter=link.dataset.menuFilter;document.querySelectorAll(".filter").forEach(x=>x.classList.toggle("active",x.dataset.filter===filter));renderProducts(filter);clothingMenu.classList.remove("open");clothingTrigger.setAttribute("aria-expanded","false");}));
-    document.addEventListener("click",e=>{if(clothingMenu&&!clothingMenu.contains(e.target)){clothingMenu.classList.remove("open");clothingTrigger?.setAttribute("aria-expanded","false");}});
+    const sideMenu=document.getElementById("sideMenu"),sideMenuOverlay=document.getElementById("sideMenuOverlay"),openSideMenu=document.getElementById("openSideMenu");
+    function showSideMenu(open){sideMenu.classList.toggle("open",open);sideMenuOverlay.classList.toggle("open",open);sideMenu.setAttribute("aria-hidden",String(!open));openSideMenu.setAttribute("aria-expanded",String(open));document.body.style.overflow=open?"hidden":"";}
+    openSideMenu.addEventListener("click",()=>showSideMenu(true));
+    document.getElementById("closeSideMenu").addEventListener("click",()=>showSideMenu(false));
+    sideMenuOverlay.addEventListener("click",()=>showSideMenu(false));
+    document.addEventListener("keydown",e=>{if(e.key==="Escape")showSideMenu(false);});
+    document.querySelectorAll("[data-menu-filter]").forEach(link=>link.addEventListener("click",()=>{const filter=link.dataset.menuFilter;document.querySelectorAll(".filter").forEach(x=>x.classList.toggle("active",x.dataset.filter===filter));renderProducts(filter);showSideMenu(false);}));
+    sideMenu.querySelectorAll('a:not([data-menu-filter])').forEach(link=>link.addEventListener("click",()=>showSideMenu(false)));
 
     document.querySelectorAll("[data-jump]").forEach(a=>a.addEventListener("click",()=>{const f=a.dataset.jump;document.querySelectorAll(".filter").forEach(x=>{x.classList.toggle("active",x.dataset.filter===f);});renderProducts(f);}));
     document.getElementById("openCart").onclick=openCart;document.getElementById("closeCart").onclick=closeCart;overlay.onclick=closeCart;
