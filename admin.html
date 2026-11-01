@@ -97,10 +97,10 @@ function buildAdminNavigation(){
  customersTitle.remove();$("customersList").remove();
  productsPage.appendChild($("productList"));
  editorPage.appendChild($("editor"));
+ ordersPage.insertAdjacentHTML("beforeend",'<div class="admin-filter"><input id="orderSearch" type="search" placeholder="Cerca per ordine, cliente o email"></div>');
  ordersPage.appendChild($("ordersManager"));
  customersPage.appendChild(customersTitle);customersPage.appendChild($("customersList"));
  appearancePage.appendChild($("coverManager"));
- ordersPage.insertAdjacentHTML("beforeend",'<div class="admin-filter"><input id="orderSearch" type="search" placeholder="Cerca per ordine, cliente o email"></div>');
  customersPage.insertAdjacentHTML("afterbegin",'<div class="admin-filter"><input id="customerSearch" type="search" placeholder="Cerca cliente per nome o email"></div>');
  layout.appendChild(nav);layout.appendChild(content);dashboard.appendChild(layout);
  $("settings-account").textContent="Account collegato: "+(currentUser?.email||"non disponibile");
