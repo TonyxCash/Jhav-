@@ -62,6 +62,15 @@ Deno.serve(async (req) => {
       body: JSON.stringify({ p_paypal_order_id: orderID, p_capture_id: payment.id }),
     });
     if (!finalize.ok) throw new Error("Pagamento ricevuto, ma non è stato possibile aggiornare le scorte. Contatta JHAVÈ con il numero ordine " + orderID + ".");
+    const payerName = [capture?.payer?.name?.given_name, capture?.payer?.name?.surname].filter(Boolean).join(" ").trim() || null;
+    const payerEmail = typeof capture?.payer?.email_address === "string" ? capture.payer.email_address : null;
+    const shipping = capture?.purchase_units?.[0]?.shipping || null;
+    const customerUpdate = await fetch(supabaseUrl + "/rest/v1/store_orders?paypal_order_id=eq." + encodeURIComponent(orderID), {
+      method: "PATCH",
+      headers: { ...dbHeaders, "Content-Type": "application/json", Prefer: "return=minimal" },
+      body: JSON.stringify({ customer_name: payerName, customer_email: payerEmail, shipping_address: shipping }),
+    });
+    if (!customerUpdate.ok) console.error("Ordine pagato: dati cliente non archiviati", await customerUpdate.text());
     return json({ status: "COMPLETED", captureId: payment.id });
   } catch (error) {
     return json({ error: error instanceof Error ? error.message : "Errore durante la conferma del pagamento." }, 400);
