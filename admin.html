@@ -163,8 +163,12 @@ function updateAdminStats(){
 
 async function enter(user){
  const {data,error}=await db.from("jhave_admins").select("user_id").eq("user_id",user.id).maybeSingle();
- if(error||!data){await db.auth.signOut();$("login").style.display="block";$("dashboard").style.display="none";message("loginMessage","Questo account non è autorizzato come amministratore. Verifica che la configurazione SQL sia stata eseguita correttamente.");return}
- currentUser=user;$("login").style.display="none";$("dashboard").style.display="block";$("accountEmail").textContent=user.email||"Account amministratore";buildAdminNavigation();await Promise.all([loadProducts(),loadCoverSettings(),loadOrders()]);updateAdminStats();
+ if(error||!data){await db.auth.signOut();currentUser=null;$("login").style.display="block";$("dashboard").style.display="none";message("loginMessage",error?"Verifica amministratore non riuscita: "+error.message:"Questo account non è autorizzato come amministratore.");return}
+ currentUser=user;$("login").style.display="none";$("dashboard").style.display="block";$("accountEmail").textContent=user.email||"Account amministratore";
+ try{buildAdminNavigation()}catch(err){console.error("JHAVE_ADMIN_NAV_ERROR",err);message("notice","Menu gestionale non caricato: "+(err?.message||String(err))+". Ricarica la pagina; accesso amministratore verificato.");}
+ const results=await Promise.allSettled([loadProducts(),loadCoverSettings(),loadOrders()]);
+ results.forEach((r,i)=>{if(r.status==="rejected"){console.error("JHAVE_ADMIN_LOAD_ERROR",i,r.reason);message("notice","Una sezione non è riuscita a caricarsi: "+(r.reason?.message||String(r.reason)));}});
+ updateAdminStats();
 }
 const COVER_KEYS=["jeans","trousers","shirts"];
 function applyCoverPreview(key){const img=$("cover-preview-"+key);const z=Number($("cover-zoom-"+key).value),x=Number($("cover-x-"+key).value),y=Number($("cover-y-"+key).value);img.style.objectPosition=x+"% "+y+"%";img.style.transform="scale("+z+")";$("cover-zoom-value-"+key).textContent=z.toFixed(2)+"×";$("cover-x-value-"+key).textContent=x+"%";$("cover-y-value-"+key).textContent=y+"%";}
