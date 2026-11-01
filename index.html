@@ -155,7 +155,15 @@
     .side-menu-links a:hover{color:#a98a54}
     @media(max-width:760px){header.site-header{height:72px;padding-inline:16px;grid-template-columns:1fr auto 1fr}.site-header .brand{font-size:25px}.site-header .brand small{font-size:7px}.site-header .menu-toggle{width:38px;height:38px}.site-header .cart-icon-button{min-width:46px;padding:8px}.site-header .cart-symbol{font-size:19px}}
     @media(max-width:380px){.site-header .brand{font-size:22px}.site-header .brand small{font-size:7px}}
-  </style>
+  
+    /* Informazioni di consegna: visibili prima dell'acquisto */
+    .shipping-promise{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;padding:18px clamp(16px,6vw,92px);background:#f3efe7;border-top:1px solid #e8e1d5;border-bottom:1px solid #e8e1d5}
+    .shipping-promise-item{display:flex;align-items:center;justify-content:center;gap:12px;text-align:left;color:#34332e}
+    .shipping-promise-icon{display:grid;place-items:center;width:38px;height:38px;flex:0 0 38px;border:1px solid #c8b58e;border-radius:50%;color:#987b49;font-size:17px}
+    .shipping-promise-item strong{display:block;font:16px Georgia,serif;font-weight:400}
+    .shipping-promise-item small{display:block;margin-top:4px;color:#77736a;font-size:9px;letter-spacing:.12em;text-transform:uppercase}
+    @media(max-width:520px){.shipping-promise{gap:8px;padding:16px 12px}.shipping-promise-item{gap:8px}.shipping-promise-icon{width:32px;height:32px;flex-basis:32px;font-size:14px}.shipping-promise-item strong{font-size:14px}.shipping-promise-item small{font-size:8px;letter-spacing:.07em}}
+</style>
 </head>
 <body>
   <div class="announcement">JHAVÈ OFFICIAL · ABBIGLIAMENTO UOMO</div>
@@ -182,6 +190,7 @@
       <div class="hero-art"><div class="hero-mark"><strong>JHAVÈ</strong><span>MADE FOR YOUR STYLE</span></div></div>
     </section>
     <section class="intro" id="collezioni"><span class="eyebrow">La selezione</span><h2>Essenziali, con personalità.</h2><p>Jeans, pantaloni e T-shirt selezionati per valorizzare il tuo stile, con attenzione al taglio, ai tessuti e alla vestibilità.</p></section>
+    <section class="shipping-promise" aria-label="Informazioni sulla spedizione"><div class="shipping-promise-item"><span class="shipping-promise-icon" aria-hidden="true">↗</span><div><strong>Spedizione gratuita</strong><small>Nessun costo aggiuntivo</small></div></div><div class="shipping-promise-item"><span class="shipping-promise-icon" aria-hidden="true">◷</span><div><strong>Consegna in 3–5 giorni</strong><small>Tempi di consegna stimati</small></div></div></section>
     <section class="collections">
       <a class="collection" href="#shop" data-jump="jeans"><img class="collection-photo" data-collection-image="jeans" src="assets/jeans.jpg" alt="Collezione jeans JHAVÈ"><h3>Jeans<span>Scopri la selezione ↗</span></h3></a>
       <a class="collection" href="#shop" data-jump="trousers"><img class="collection-photo" data-collection-image="trousers" src="assets/pantaloni-sartoriali.jpg" alt="Collezione pantaloni JHAVÈ"><h3>Pantaloni<span>Scopri la selezione ↗</span></h3></a>
@@ -200,7 +209,7 @@
     <div class="cart-items" id="cartItems"></div>
     <div class="cart-total"><span>Totale prodotti</span><strong id="cartTotal">€ 0,00</strong></div>
     <div class="checkout"><div id="paypalButtonContainer" aria-label="Pagamento PayPal"></div><div id="googlePayButtonContainer" aria-label="Pagamento Google Pay"></div><button class="secondary" id="whatsappButton">Richiedi ordine via WhatsApp</button></div>
-    <p class="notice" id="checkoutNotice">I pagamenti e gli ordini saranno attivati dopo aver inserito i dati ufficiali del venditore, il link PayPal e il contatto WhatsApp. Spedizione gratuita.</p>
+    <p class="notice" id="checkoutNotice">Spedizione gratuita · Consegna prevista in 3–5 giorni.</p>
   </aside>
   <div class="toast" id="toast"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -290,7 +299,7 @@
       const paypal=document.getElementById("paypalButtonContainer"),googlePay=document.getElementById("googlePayButtonContainer"),wa=document.getElementById("whatsappButton"),notice=document.getElementById("checkoutNotice");
       paypal.style.display=cart.length&&known?"block":"none";googlePay.style.display=cart.length&&known?"flex":"none";
       wa.disabled=!(cart.length&&STORE.whatsapp);wa.style.opacity=wa.disabled?".45":"1";
-      notice.textContent=cart.length&&known?"Spedizione gratuita. Il totale mostrato è quello che pagherai.":"Inserisci nel carrello prodotti con prezzo definito oppure richiedi conferma direttamente a JHAVÈ su WhatsApp.";
+      notice.textContent=cart.length&&known?"Spedizione gratuita · Consegna prevista in 3–5 giorni. Il totale mostrato è quello che pagherai.":"Inserisci nel carrello prodotti con prezzo definito oppure richiedi conferma direttamente a JHAVÈ su WhatsApp.";
     }
     let paypalButtonsReady=false,googlePayReady=false,googlePaymentsClient=null,googlePayConfig=null,googlePayEnvironment="TEST";
     async function createStoreOrder(){
@@ -437,7 +446,7 @@
       }).join("\n");
       const known=cart.every(x=>x.price!=null);
       const total=known?euro(cart.reduce((a,b)=>a+b.price*b.qty,0)):"da confermare";
-      const message="Ciao, vorrei richiedere un ordine da JHAVÈ Official.\n\n"+lines+"\n\nTotale prodotti: "+total+"\nSpedizione: gratuita.\nMi confermate disponibilità e tempi di consegna?\n\nGrazie.";
+      const message="Ciao, vorrei richiedere un ordine da JHAVÈ Official.\n\n"+lines+"\n\nTotale prodotti: "+total+"\nSpedizione: gratuita.\nConsegna prevista: 3–5 giorni.\nMi confermate disponibilità e tempi di consegna?\n\nGrazie.";
       location.href="https://wa.me/"+STORE.whatsapp+"?text="+encodeURIComponent(message);
     };
     document.getElementById("year").textContent=new Date().getFullYear();loadStoreProducts();renderCart();loadPayPalButtons();
