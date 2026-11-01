@@ -73,6 +73,7 @@ function buildAdminNavigation(){
  '<button type="button" data-page="editor">＋ <span>Inserisci capo</span></button>'+
  '<button type="button" data-page="orders">▣ <span>Ordini</span></button>'+
  '<button type="button" data-page="customers">♙ <span>Clienti</span></button>'+
+ '<button type="button" data-page="stock">▦ <span>Magazzino</span></button>'+
  '<button type="button" data-page="appearance">◈ <span>Aspetto sito</span></button>';
  const content=document.createElement("div");content.className="admin-content";
  const makePage=(id,eyebrow,title)=>{const el=document.createElement("section");el.className="admin-page";el.id="page-"+id;el.innerHTML='<div class="admin-page-head"><div class="eyebrow">'+eyebrow+'</div><h2>'+title+'</h2></div>';content.appendChild(el);return el;};
@@ -83,6 +84,8 @@ function buildAdminNavigation(){
  const editorPage=makePage("editor","Catalogo","Inserimento e modifica capo");
  const ordersPage=makePage("orders","Vendite","Ordini");
  const customersPage=makePage("customers","Relazioni","Clienti");
+ const stockPage=makePage("stock","Disponibilità","Magazzino");
+ stockPage.insertAdjacentHTML("beforeend",'<p class="muted">Controlla rapidamente le quantità disponibili per taglia. Per modificare le quantità apri la scheda del prodotto.</p><div id="stockOverview" class="products"></div>');
  const appearancePage=makePage("appearance","Personalizzazione","Aspetto del sito");
  const customersTitle=$("customersList").previousElementSibling;
  customersTitle.remove();$("customersList").remove();
@@ -103,6 +106,15 @@ function buildAdminNavigation(){
  $("productList").addEventListener("click",e=>{if(e.target.closest("[data-edit]"))showPage("editor")});
  window.jhaveShowPage=showPage;
  adminNavigationReady=true;
+}
+function renderStockOverview(){
+ const wrap=$("stockOverview");if(!wrap)return;
+ if(!products.length){wrap.innerHTML='<p class="muted">Nessun prodotto in catalogo.</p>';return;}
+ wrap.innerHTML=products.map(p=>{
+  const sizes=(p.sizes||[]);const details=sizes.length?sizes.map(size=>'<span style="display:inline-block;border:1px solid var(--line);padding:5px 8px;margin:3px;font-size:11px">'+esc(size)+': <b>'+Math.max(0,Number(p.size_stock?.[size]||0))+'</b></span>').join(""):'<span class="muted">Taglie non impostate</span>';
+  const total=Object.values(p.size_stock||{}).reduce((n,v)=>n+Math.max(0,Number(v)||0),0);
+  return '<article class="product" style="grid-template-columns:1fr"><div class="toolbar"><strong>'+esc(p.name)+'</strong><span class="muted">'+total+' pezzi totali</span></div><div>'+details+'</div><div><button class="secondary" type="button" data-stock-edit="'+esc(p.id)+'">Modifica disponibilità</button></div></article>';
+ }).join("");
 }
 function updateAdminStats(){
  if($("stat-products"))$("stat-products").textContent=products.length;
@@ -175,7 +187,7 @@ async function loadProducts(){
  clearMessage("notice");$("productList").innerHTML="<p class='muted'>Caricamento catalogo…</p>";
  const {data,error}=await db.from("products").select("*").order("sort_order",{ascending:true});
  if(error){$("productList").innerHTML="";message("notice","Errore nel caricamento: "+error.message);return}
- products=data||[];updateAdminStats();const stockResult=await db.from("product_size_stock").select("product_id,size,quantity");if(stockResult.error)throw stockResult.error;products.forEach(p=>p.size_stock={});(stockResult.data||[]).forEach(row=>{const product=products.find(p=>p.id===row.product_id);if(product)product.size_stock[row.size]=Number(row.quantity)||0;});renderList();
+ products=data||[];updateAdminStats();const stockResult=await db.from("product_size_stock").select("product_id,size,quantity");if(stockResult.error)throw stockResult.error;products.forEach(p=>p.size_stock={});(stockResult.data||[]).forEach(row=>{const product=products.find(p=>p.id===row.product_id);if(product)product.size_stock[row.size]=Number(row.quantity)||0;});renderList();renderStockOverview();
 }
 function renderList(){
  if(!products.length){$("productList").innerHTML="<p class='muted'>Nessun prodotto. Crea la prima scheda.</p>";return}
@@ -198,6 +210,7 @@ function openEditor(p,duplicate=false){
 function renderSizeStockEditor(sizes,stock={}){const wrap=$("sizeStockEditor");const clean=[...new Set((sizes||[]).map(x=>String(x).trim()).filter(Boolean))];wrap.innerHTML=clean.length?clean.map(size=>'<div><label for="stock-size-'+esc(size)+'">Taglia '+esc(size)+' · pezzi</label><input class="size-stock-input" id="stock-size-'+esc(size)+'" data-size="'+esc(size)+'" type="number" min="0" step="1" inputmode="numeric" value="'+Math.max(0,Math.floor(Number(stock[size]??0)))+'" required></div>').join(""):'<p class="muted">Inserisci prima le taglie, separate da virgola.</p>';}
 $("sizes").addEventListener("input",()=>{const previous={};document.querySelectorAll(".size-stock-input").forEach(el=>previous[el.dataset.size]=Number(el.value)||0);renderSizeStockEditor($("sizes").value.split(",").map(x=>x.trim()),previous);});
 $("cancelEdit").onclick=()=>{$("editor").style.display="none"};
+$("stockOverview").addEventListener("click",e=>{const b=e.target.closest("[data-stock-edit]");if(!b)return;const p=products.find(x=>x.id===b.dataset.stockEdit);if(p){openEditor(p);window.jhaveShowPage("editor");}});
 $("productList").addEventListener("click",async e=>{
  const edit=e.target.closest("[data-edit]");if(edit){openEditor(products.find(p=>p.id===edit.dataset.edit));return}
  const duplicate=e.target.closest("[data-duplicate]");if(duplicate){const p=products.find(x=>x.id===duplicate.dataset.duplicate);if(!p)return;if(!p.variant_group){const group="colori-"+p.slug;const {error}=await db.from("products").update({variant_group:group,updated_at:new Date().toISOString()}).eq("id",p.id);if(error){message("notice","Non riesco a collegare i colori: "+error.message);return}p.variant_group=group;}openEditor(p,true);return}
