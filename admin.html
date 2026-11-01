@@ -79,7 +79,7 @@ function buildAdminNavigation(){
  const makePage=(id,eyebrow,title)=>{const el=document.createElement("section");el.className="admin-page";el.id="page-"+id;el.innerHTML='<div class="admin-page-head"><div class="eyebrow">'+eyebrow+'</div><h2>'+title+'</h2></div>';content.appendChild(el);return el;};
  const overview=makePage("overview","Riepilogo negozio","Panoramica");
  overview.classList.add("active");
- overview.insertAdjacentHTML("beforeend",'<p class="muted">Qui trovi un riepilogo rapido del negozio e gli accessi alle funzioni principali.</p><div class="admin-stats"><div class="admin-stat"><span>Prodotti a catalogo</span><strong id="stat-products">—</strong></div><div class="admin-stat"><span>Ordini registrati</span><strong id="stat-orders">—</strong></div><div class="admin-stat"><span>Ordini pagati</span><strong id="stat-paid">—</strong></div></div><div class="admin-shortcuts"><button class="admin-shortcut" type="button" data-go="editor"><b>＋ Inserisci un capo</b>Aggiungi un prodotto, foto, prezzi, taglie e quantità.</button><button class="admin-shortcut" type="button" data-go="orders"><b>▣ Controlla gli ordini</b>Verifica acquisti, pagamenti e spedizioni.</button><button class="admin-shortcut" type="button" data-go="customers"><b>♙ Gestisci i clienti</b>Consulta i clienti e lo storico degli acquisti.</button><button class="admin-shortcut" type="button" data-go="appearance"><b>◈ Personalizza il sito</b>Aggiorna le immagini di copertina e la loro visualizzazione.</button></div>');
+ overview.insertAdjacentHTML("beforeend",'<p class="muted">Qui trovi un riepilogo rapido del negozio e gli accessi alle funzioni principali.</p><div class="admin-stats"><div class="admin-stat"><span>Prodotti a catalogo</span><strong id="stat-products">—</strong></div><div class="admin-stat"><span>Ordini registrati</span><strong id="stat-orders">—</strong></div><div class="admin-stat"><span>Ordini pagati</span><strong id="stat-paid">—</strong></div><div class="admin-stat"><span>Clienti con acquisti</span><strong id="stat-customers">—</strong></div><div class="admin-stat"><span>Incasso ordini pagati</span><strong id="stat-revenue">—</strong></div></div><div class="admin-shortcuts"><button class="admin-shortcut" type="button" data-go="editor"><b>＋ Inserisci un capo</b>Aggiungi un prodotto, foto, prezzi, taglie e quantità.</button><button class="admin-shortcut" type="button" data-go="orders"><b>▣ Controlla gli ordini</b>Verifica acquisti, pagamenti e spedizioni.</button><button class="admin-shortcut" type="button" data-go="customers"><b>♙ Gestisci i clienti</b>Consulta i clienti e lo storico degli acquisti.</button><button class="admin-shortcut" type="button" data-go="appearance"><b>◈ Personalizza il sito</b>Aggiorna le immagini di copertina e la loro visualizzazione.</button></div>');
  const productsPage=makePage("products","Catalogo","Prodotti");
  const editorPage=makePage("editor","Catalogo","Inserimento e modifica capo");
  const ordersPage=makePage("orders","Vendite","Ordini");
@@ -104,6 +104,7 @@ function buildAdminNavigation(){
  overview.addEventListener("click",e=>{const b=e.target.closest("[data-go]");if(b){if(b.dataset.go==="editor")openEditor(null);showPage(b.dataset.go)}});
  $("newProduct").addEventListener("click",()=>{openEditor(null);showPage("editor")});
  $("productList").addEventListener("click",e=>{if(e.target.closest("[data-edit]"))showPage("editor")});
+ content.addEventListener("click",e=>{const b=e.target.closest("[data-stock-edit]");if(!b)return;const p=products.find(x=>x.id===b.dataset.stockEdit);if(p){openEditor(p);showPage("editor");}});
  window.jhaveShowPage=showPage;
  adminNavigationReady=true;
 }
@@ -119,7 +120,10 @@ function renderStockOverview(){
 function updateAdminStats(){
  if($("stat-products"))$("stat-products").textContent=products.length;
  if($("stat-orders"))$("stat-orders").textContent=adminOrders.length;
- if($("stat-paid"))$("stat-paid").textContent=adminOrders.filter(o=>o.status==="paid").length;
+ const paid=adminOrders.filter(o=>o.status==="paid");
+ if($("stat-paid"))$("stat-paid").textContent=paid.length;
+ if($("stat-customers"))$("stat-customers").textContent=new Set(adminOrders.map(o=>(o.customer_email||"").trim().toLowerCase()).filter(Boolean)).size;
+ if($("stat-revenue"))$("stat-revenue").textContent=euro(paid.reduce((sum,o)=>sum+Number(o.amount||0),0));
 }
 
 async function enter(user){
@@ -210,7 +214,6 @@ function openEditor(p,duplicate=false){
 function renderSizeStockEditor(sizes,stock={}){const wrap=$("sizeStockEditor");const clean=[...new Set((sizes||[]).map(x=>String(x).trim()).filter(Boolean))];wrap.innerHTML=clean.length?clean.map(size=>'<div><label for="stock-size-'+esc(size)+'">Taglia '+esc(size)+' · pezzi</label><input class="size-stock-input" id="stock-size-'+esc(size)+'" data-size="'+esc(size)+'" type="number" min="0" step="1" inputmode="numeric" value="'+Math.max(0,Math.floor(Number(stock[size]??0)))+'" required></div>').join(""):'<p class="muted">Inserisci prima le taglie, separate da virgola.</p>';}
 $("sizes").addEventListener("input",()=>{const previous={};document.querySelectorAll(".size-stock-input").forEach(el=>previous[el.dataset.size]=Number(el.value)||0);renderSizeStockEditor($("sizes").value.split(",").map(x=>x.trim()),previous);});
 $("cancelEdit").onclick=()=>{$("editor").style.display="none"};
-$("stockOverview").addEventListener("click",e=>{const b=e.target.closest("[data-stock-edit]");if(!b)return;const p=products.find(x=>x.id===b.dataset.stockEdit);if(p){openEditor(p);window.jhaveShowPage("editor");}});
 $("productList").addEventListener("click",async e=>{
  const edit=e.target.closest("[data-edit]");if(edit){openEditor(products.find(p=>p.id===edit.dataset.edit));return}
  const duplicate=e.target.closest("[data-duplicate]");if(duplicate){const p=products.find(x=>x.id===duplicate.dataset.duplicate);if(!p)return;if(!p.variant_group){const group="colori-"+p.slug;const {error}=await db.from("products").update({variant_group:group,updated_at:new Date().toISOString()}).eq("id",p.id);if(error){message("notice","Non riesco a collegare i colori: "+error.message);return}p.variant_group=group;}openEditor(p,true);return}
