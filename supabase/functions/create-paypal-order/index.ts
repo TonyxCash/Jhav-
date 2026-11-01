@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
 
     const ids = [...new Set(normalized.map((x: any) => x.id))];
     const query = new URLSearchParams({
-      select: "id,name,price,sizes,color_name,active",
+      select: "id,name,price,sizes,color_name,active,stock_quantity",
       id: "in.(" + ids.join(",") + ")",
       active: "eq.true",
     });
@@ -63,6 +63,7 @@ Deno.serve(async (req) => {
     const snapshot = normalized.map((item: any) => {
       const p: any = byId.get(item.id);
       if (!p || !Array.isArray(p.sizes) || !p.sizes.includes(item.size)) throw new Error("Un prodotto o una taglia non è più disponibile. Aggiorna il carrello.");
+      if (!Number.isInteger(Number(p.stock_quantity)) || Number(p.stock_quantity) < item.qty) throw new Error("Scorte insufficienti per " + p.name + ". Disponibili: " + Number(p.stock_quantity || 0) + ".");
       const price = Number(p.price);
       if (!Number.isFinite(price) || price <= 0) throw new Error("Un prodotto non ha un prezzo valido. Contatta JHAVÈ.");
       total += price * item.qty;
