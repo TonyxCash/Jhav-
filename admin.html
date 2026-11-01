@@ -119,8 +119,6 @@ $("productList").addEventListener("click",async e=>{
  const {error}=await db.from("products").delete().eq("id",p.id);if(error)message("notice","Eliminazione non riuscita: "+error.message);else{message("notice","Prodotto eliminato.");await loadProducts()}}
 });
 $("photo").addEventListener("change",()=>{
- const stockRows=[...document.querySelectorAll(".size-stock-input")].map(el=>({product_id:saved.id,size:el.dataset.size,quantity:Math.max(0,Math.floor(Number(el.value)||0))}));
- if(stockRows.length){const stockSave=await db.from("product_size_stock").upsert(stockRows,{onConflict:"product_id,size"});if(stockSave.error)throw stockSave.error;}
  const files=[...$("photo").files];if(!files.length)return;
  const valid=files.every(file=>file.size<=10*1024*1024&&["image/jpeg","image/png","image/webp"].includes(file.type));
  if(!valid){$("photo").value="";message("notice","Ogni foto deve essere JPG, PNG o WebP e non superare 10 MB.");return;}
@@ -141,6 +139,8 @@ $("productForm").addEventListener("submit",async e=>{
  let saved;
  if(id){const r=await db.from("products").update(payload).eq("id",id).select().single();if(r.error)throw r.error;saved=r.data}
  else{const r=await db.from("products").insert(payload).select().single();if(r.error)throw r.error;saved=r.data}
+ const stockRows=[...document.querySelectorAll(".size-stock-input")].map(el=>({product_id:saved.id,size:el.dataset.size,quantity:Math.max(0,Math.floor(Number(el.value)||0))}));
+ if(stockRows.length){const stockSave=await db.from("product_size_stock").upsert(stockRows,{onConflict:"product_id,size"});if(stockSave.error)throw stockSave.error;}
  const files=[...$("photo").files];
  let urls=removeCurrentImage?[]:[...currentImageUrls];
  for(const file of files){
