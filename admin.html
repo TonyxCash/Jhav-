@@ -9,6 +9,7 @@
 @media(max-width:620px){body{padding:12px}.grid{grid-template-columns:1fr}.wide{grid-column:auto}.product{grid-template-columns:64px 1fr}.product img,.placeholder{width:64px;height:82px}.product-actions{grid-column:1/-1}.toolbar button{margin:5px 4px 0 0}}
 
 .admin-layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:18px;align-items:start;margin-top:20px}
+.admin-mobile-menu{display:none;margin:14px 0;padding:12px;border:1px solid var(--line);background:#fffefa}.admin-mobile-menu label{display:block;font-size:11px;margin-bottom:7px;color:var(--muted)}.admin-mobile-menu select{width:100%;padding:13px;border:1px solid var(--line);background:white;color:var(--ink);font-size:15px}
 .admin-nav{background:#fffefa;border:1px solid var(--line);padding:10px;position:sticky;top:14px}
 .admin-nav .nav-label{font-size:9px;letter-spacing:.18em;color:#9b7d49;padding:12px 10px 8px;text-transform:uppercase;font-weight:bold}
 .admin-nav button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;margin:3px 0;padding:13px 12px;background:transparent;color:var(--ink);border:1px solid transparent;letter-spacing:.04em;font-size:11px;text-transform:none}
@@ -20,7 +21,7 @@
 .admin-shortcut{border:1px solid var(--line);padding:16px;text-align:left;background:#fff;color:var(--ink);letter-spacing:0;text-transform:none;font-size:12px}
 .admin-shortcut b{display:block;font:18px var(--serif);margin-bottom:6px}
 .admin-page .products{margin-top:14px}.admin-filter{margin:14px 0}.admin-filter input{background:#fff}.stats-table{width:100%;border-collapse:collapse;margin-top:14px;font-size:12px}.stats-table th,.stats-table td{padding:11px 8px;border-bottom:1px solid var(--line);text-align:left}.settings-list{display:grid;gap:10px;margin-top:16px}.settings-item{border:1px solid var(--line);padding:15px;background:#fff}.settings-item strong{display:block;font:18px var(--serif);margin-bottom:5px}.settings-item a{color:#806333}
-@media(max-width:760px){body{padding:10px}.admin-layout{grid-template-columns:1fr;gap:10px}.admin-nav{position:static;display:flex;overflow-x:auto;gap:4px;padding:7px}.admin-nav .nav-label{display:none}.admin-nav button{width:auto;min-width:max-content;margin:0;padding:11px 12px}.admin-stats{grid-template-columns:1fr 1fr}.admin-shortcuts{grid-template-columns:1fr}.admin-page{padding:15px}}
+@media(max-width:760px){body{padding:10px}.admin-mobile-menu{display:block}.admin-layout{grid-template-columns:1fr;gap:10px}.admin-nav{display:none}.admin-nav .nav-label{display:none}.admin-nav button{width:auto;min-width:max-content;margin:0;padding:11px 12px}.admin-stats{grid-template-columns:1fr 1fr}.admin-shortcuts{grid-template-columns:1fr}.admin-page{padding:15px}}
 @media(max-width:420px){.admin-stats{grid-template-columns:1fr 1fr}.admin-stat{padding:13px}.admin-stat strong{font-size:23px}}
 </style></head><body>
 <main class="shell"><div class="brand">JHAVÈ</div><div class="sub">Official · Admin</div>
@@ -102,16 +103,21 @@ function buildAdminNavigation(){
  customersPage.appendChild(customersTitle);customersPage.appendChild($("customersList"));
  appearancePage.appendChild($("coverManager"));
  customersPage.insertAdjacentHTML("afterbegin",'<div class="admin-filter"><input id="customerSearch" type="search" placeholder="Cerca cliente per nome o email"></div>');
- layout.appendChild(nav);layout.appendChild(content);dashboard.appendChild(layout);
+ layout.appendChild(nav);layout.appendChild(content);
+ const mobileMenu=document.createElement("div");mobileMenu.className="admin-mobile-menu";
+ mobileMenu.innerHTML='<label for="adminPageSelect">Vai alla sezione</label><select id="adminPageSelect"><option value="overview">Panoramica</option><option value="products">Prodotti</option><option value="editor">Inserisci capo</option><option value="orders">Ordini</option><option value="customers">Clienti</option><option value="stock">Magazzino</option><option value="appearance">Aspetto sito</option><option value="statistics">Statistiche</option><option value="settings">Impostazioni</option></select>';
+ dashboard.appendChild(mobileMenu);dashboard.appendChild(layout);
  $("settings-account").textContent="Account collegato: "+(currentUser?.email||"non disponibile");
  $("orderSearch").addEventListener("input",()=>filterAdminCards("ordersList",$("orderSearch").value));
  $("customerSearch").addEventListener("input",()=>filterAdminCards("customersList",$("customerSearch").value));
  const showPage=id=>{
   content.querySelectorAll(".admin-page").forEach(p=>p.classList.toggle("active",p.id==="page-"+id));
   nav.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===id));
+  $("adminPageSelect").value=id;
   if(id==="editor")$("editor").scrollIntoView({behavior:"smooth",block:"start"});
  };
  nav.addEventListener("click",e=>{const b=e.target.closest("[data-page]");if(b)showPage(b.dataset.page)});
+ $("adminPageSelect").addEventListener("change",e=>showPage(e.target.value));
  overview.addEventListener("click",e=>{const b=e.target.closest("[data-go]");if(b){if(b.dataset.go==="editor")openEditor(null);showPage(b.dataset.go)}});
  $("newProduct").addEventListener("click",()=>{openEditor(null);showPage("editor")});
  $("productList").addEventListener("click",e=>{if(e.target.closest("[data-edit]"))showPage("editor")});
