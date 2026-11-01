@@ -165,7 +165,7 @@ async function enter(user){
  const {data,error}=await db.from("jhave_admins").select("user_id").eq("user_id",user.id).maybeSingle();
  if(error||!data){await db.auth.signOut();currentUser=null;$("login").style.display="block";$("dashboard").style.display="none";message("loginMessage",error?"Verifica amministratore non riuscita: "+error.message:"Questo account non è autorizzato come amministratore.");return}
  currentUser=user;$("login").style.display="none";$("dashboard").style.display="block";$("accountEmail").textContent=user.email||"Account amministratore";
- try{buildAdminNavigation()}catch(err){console.error("JHAVE_ADMIN_NAV_ERROR",err);message("notice","Menu gestionale non caricato: "+(err?.message||String(err))+". Ricarica la pagina; accesso amministratore verificato.");}
+ try{buildAdminNavigation()}catch(err){console.error("JHAVE_ADMIN_NAV_ERROR",err);const diagnostic=document.createElement("div");diagnostic.className="message show";diagnostic.style.display="block";diagnostic.style.background="#fff0ed";diagnostic.style.color="#8b2418";diagnostic.textContent="ERRORE MENU: "+(err?.message||String(err))+". Invia questo messaggio all’assistenza.";dashboard.insertBefore(diagnostic,dashboard.children[2]||null);}
  const results=await Promise.allSettled([loadProducts(),loadCoverSettings(),loadOrders()]);
  results.forEach((r,i)=>{if(r.status==="rejected"){console.error("JHAVE_ADMIN_LOAD_ERROR",i,r.reason);message("notice","Una sezione non è riuscita a caricarsi: "+(r.reason?.message||String(r.reason)));}});
  updateAdminStats();
@@ -226,7 +226,7 @@ async function loadOrders(){
 $("ordersList").addEventListener("change",async e=>{const sel=e.target.closest("[data-order-status]");if(!sel)return;const id=sel.dataset.orderStatus,msg=$("fulfill-msg-"+id);sel.disabled=true;msg.textContent="Salvataggio…";const {error}=await db.from("store_orders").update({fulfillment_status:sel.value}).eq("id",id);sel.disabled=false;msg.textContent=error?"Errore: "+error.message:"Salvato";});
 $("refreshOrders").addEventListener("click",loadOrders);
 async function loadProducts(){
- clearMessage("notice");$("productList").innerHTML="<p class='muted'>Caricamento catalogo…</p>";
+ $("productList").innerHTML="<p class='muted'>Caricamento catalogo…</p>";
  const {data,error}=await db.from("products").select("*").order("sort_order",{ascending:true});
  if(error){$("productList").innerHTML="";message("notice","Errore nel caricamento: "+error.message);return}
  products=data||[];updateAdminStats();const stockResult=await db.from("product_size_stock").select("product_id,size,quantity");if(stockResult.error)throw stockResult.error;products.forEach(p=>p.size_stock={});(stockResult.data||[]).forEach(row=>{const product=products.find(p=>p.id===row.product_id);if(product)product.size_stock[row.size]=Number(row.quantity)||0;});renderList();renderStockOverview();
