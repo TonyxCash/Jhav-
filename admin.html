@@ -219,14 +219,37 @@ function formatOrderDate(value){return value?new Date(value).toLocaleString("it-
 function orderItemsText(items){if(!Array.isArray(items))return "Dettagli non disponibili";return items.map(x=>esc(x.name||"Prodotto")+" · "+esc(x.color||"")+" · taglia "+esc(x.size||"—")+" × "+Number(x.quantity||0)).join("<br>")}
 async function loadOrders(){
  const list=$("ordersList"),customers=$("customersList");
- if(!list||!customers){throw new Error("Sezione ordini non pronta: manca #ordersList o #customersList dopo la creazione del menu.");}
- list.innerHTML="<p class='muted'>Caricamento ordini…</p>";customers.innerHTML="";
- let orders=[],start=0,batchSize=500;
- while(true){const {data,error}=await db.from("store_orders").select("id,paypal_order_id,amount,currency,items,status,created_at,paid_at,customer_name,customer_email,shipping_address,fulfillment_status").order("created_at",{ascending:false}).range(start,start+batchSize-1);if(error){list.innerHTML="";$("ordersSummary").textContent="Impossibile caricare gli ordini: "+error.message;return}const batch=data||[];orders=orders.concat(batch);if(batch.length<batchSize)break;start+=batchSize;}adminOrders=orders;updateAdminStats();$("ordersSummary").textContent=orders.length+" ordini in archivio · "+orders.filter(x=>x.status==="paid").length+" pagati";
- if(!orders.length){list.innerHTML="<p class='muted'>Ancora nessun ordine PayPal.</p>";customers.innerHTML="<p class='muted'>I clienti appariranno dopo il primo pagamento.</p>";return}
- list.innerHTML=orders.map(o=>{const address=o.shipping_address?.address||{};const addressText=[address.address_line_1,address.address_line_2,address.admin_area_2,address.postal_code,address.country_code].filter(Boolean).map(esc).join(", ");return '<article class="product" style="grid-template-columns:1fr;align-items:start"><div><strong>Ordine '+esc(o.paypal_order_id)+'</strong><small>'+formatOrderDate(o.created_at)+' · '+euro(o.amount)+' · pagamento: '+esc(o.status)+'</small><p style="font-size:12px;line-height:1.7;margin:9px 0"><b>'+esc(o.customer_name||"Cliente PayPal")+'</b><br>'+esc(o.customer_email||"Email non fornita")+'<br>'+ (addressText||"Indirizzo non restituito da PayPal")+'</p><small>'+orderItemsText(o.items)+'</small><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px"><label for="fulfill-'+esc(o.id)+'">Gestione:</label><select id="fulfill-'+esc(o.id)+'" data-order-status="'+esc(o.id)+'" style="max-width:190px;padding:9px;border:1px solid var(--line)"><option value="new" '+(o.fulfillment_status==="new"?"selected":"")+'>Nuovo</option><option value="processing" '+(o.fulfillment_status==="processing"?"selected":"")+'>In preparazione</option><option value="shipped" '+(o.fulfillment_status==="shipped"?"selected":"")+'>Spedito</option><option value="delivered" '+(o.fulfillment_status==="delivered"?"selected":"")+'>Consegnato</option><option value="cancelled" '+(o.fulfillment_status==="cancelled"?"selected":"")+'>Annullato</option></select><span class="muted" id="fulfill-msg-'+esc(o.id)+'"></span></div></div></article>'}).join("");
- const map=new Map();orders.filter(o=>o.customer_email).forEach(o=>{const key=o.customer_email.toLowerCase();if(!map.has(key))map.set(key,{name:o.customer_name,email:o.customer_email,count:0,total:0,last:o.created_at});const c=map.get(key);c.count++;if(o.status==="paid")c.total+=Number(o.amount)||0;if(new Date(o.created_at)>new Date(c.last))c.last=o.created_at;});
- customers.innerHTML=map.size?[...map.values()].sort((a,b)=>new Date(b.last)-new Date(a.last)).map(c=>'<article class="product" style="grid-template-columns:1fr"><strong>'+esc(c.name||"Cliente")+'</strong><small>'+esc(c.email)+'<br>'+c.count+' ordini · totale pagato '+euro(c.total)+'<br>Ultimo ordine: '+formatOrderDate(c.last)+'</small></article>').join(""):"<p class='muted'>Nessuna email cliente disponibile nei pagamenti registrati.</p>";
+ if(!list||!customers)throw new Error("Sezione ordini non pronta: manca #ordersList o #customersList.");
+ list.innerHTML="<p class='muted'>Caricamento pagamenti confermati…</p>";customers.innerHTML="";
+ let allOrders=[],start=0,batchSize=500;
+ while(true){
+  const {data,error}=await db.from("store_orders").select("id,paypal_order_id,amount,currency,items,status,created_at,paid_at,customer_name,customer_email,shipping_address,fulfillment_status").order("created_at",{ascending:false}).range(start,start+batchSize-1);
+  if(error){list.innerHTML="";$("ordersSummary").textContent="Impossibile caricare gli ordini: "+error.message;return;}
+  const batch=data||[];allOrders=allOrders.concat(batch);if(batch.length<batchSize)break;start+=batchSize;
+ }
+ const paidOrders=allOrders.filter(o=>o.status==="paid");
+ const incompleteCount=allOrders.filter(o=>o.status==="pending").length;
+ adminOrders=paidOrders;
+ updateAdminStats();
+ $("ordersSummary").textContent=paidOrders.length+" acquisti pagati"+(incompleteCount?" · "+incompleteCount+" tentativi di pagamento non completati (esclusi dalle vendite)":"");
+ if(!paidOrders.length){
+  list.innerHTML="<p class='muted'>Nessun acquisto con pagamento confermato. I tentativi non completati non vengono mostrati come ordini.</p>";
+  customers.innerHTML="<p class='muted'>I clienti compariranno dopo il primo pagamento confermato.</p>";
+  return;
+ }
+ list.innerHTML=paidOrders.map(o=>{
+  const address=o.shipping_address?.address||{};
+  const addressText=[address.address_line_1,address.address_line_2,address.admin_area_2,address.postal_code,address.country_code].filter(Boolean).map(esc).join(", ");
+  return '<article class="product" style="grid-template-columns:1fr;align-items:start"><div><strong>Ordine '+esc(o.paypal_order_id)+'</strong><small>'+formatOrderDate(o.paid_at||o.created_at)+' · '+euro(o.amount)+' · <b>Pagamento confermato</b></small><p style="font-size:12px;line-height:1.7;margin:9px 0"><b>'+esc(o.customer_name||"Cliente PayPal")+'</b><br>'+esc(o.customer_email||"Email non fornita")+'<br>'+(addressText||"Indirizzo non restituito da PayPal")+'</p><small>'+orderItemsText(o.items)+'</small><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px"><label for="fulfill-'+esc(o.id)+'">Gestione:</label><select id="fulfill-'+esc(o.id)+'" data-order-status="'+esc(o.id)+'" style="max-width:190px;padding:9px;border:1px solid var(--line)"><option value="new" '+(o.fulfillment_status==="new"?"selected":"")+'>Nuovo</option><option value="processing" '+(o.fulfillment_status==="processing"?"selected":"")+'>In preparazione</option><option value="shipped" '+(o.fulfillment_status==="shipped"?"selected":"")+'>Spedito</option><option value="delivered" '+(o.fulfillment_status==="delivered"?"selected":"")+'>Consegnato</option><option value="cancelled" '+(o.fulfillment_status==="cancelled"?"selected":"")+'>Annullato</option></select><span class="muted" id="fulfill-msg-'+esc(o.id)+'"></span></div></div></article>';
+ }).join("");
+ const map=new Map();
+ paidOrders.filter(o=>o.customer_email).forEach(o=>{
+  const key=o.customer_email.toLowerCase();
+  if(!map.has(key))map.set(key,{name:o.customer_name,email:o.customer_email,count:0,total:0,last:o.paid_at||o.created_at});
+  const c=map.get(key);c.count++;c.total+=Number(o.amount)||0;
+  if(new Date(o.paid_at||o.created_at)>new Date(c.last))c.last=o.paid_at||o.created_at;
+ });
+ customers.innerHTML=map.size?[...map.values()].sort((a,b)=>new Date(b.last)-new Date(a.last)).map(c=>'<article class="product" style="grid-template-columns:1fr"><strong>'+esc(c.name||"Cliente")+'</strong><small>'+esc(c.email)+'<br>'+c.count+' acquisti · totale pagato '+euro(c.total)+'<br>Ultimo acquisto: '+formatOrderDate(c.last)+'</small></article>').join(""):"<p class='muted'>Nessun cliente con email disponibile nei pagamenti confermati.</p>";
 }
 $("ordersList").addEventListener("change",async e=>{const sel=e.target.closest("[data-order-status]");if(!sel)return;const id=sel.dataset.orderStatus,msg=$("fulfill-msg-"+id);sel.disabled=true;msg.textContent="Salvataggio…";const {error}=await db.from("store_orders").update({fulfillment_status:sel.value}).eq("id",id);sel.disabled=false;msg.textContent=error?"Errore: "+error.message:"Salvato";});
 $("refreshOrders").addEventListener("click",loadOrders);
