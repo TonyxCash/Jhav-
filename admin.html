@@ -93,7 +93,7 @@ async function loadProducts(){
 }
 function renderList(){
  if(!products.length){$("productList").innerHTML="<p class='muted'>Nessun prodotto. Crea la prima scheda.</p>";return}
- $("productList").innerHTML=products.map(p=>'<article class="product">'+(p.image_url?'<img src="'+esc(p.image_url)+'" alt="">':'<div class="placeholder">J</div>')+'<div><strong>'+esc(p.name)+'</strong><small>'+esc(p.category==="shirts"?"T-shirt":p.category==="jeans"?"Jeans":"Pantaloni")+(p.color_name?' · '+esc(p.color_name):'')+(p.variant_group?' · <span style="color:#8a6d3b">Colori collegati</span>':'')+' · '+euro(p.price)+' · '+(p.active?"Pubblicato":"Nascosto")+' · Magazzino: '+Number(p.stock_quantity??0)+' pz'+(Number(p.stock_quantity??0)===0?' · SOLD OUT':'')+'<br>Taglie: '+esc((p.sizes||[]).join(", "))+'</small></div><div class="product-actions"><button type="button" data-edit="'+esc(p.id)+'" class="secondary">Modifica</button><button type="button" data-duplicate="'+esc(p.id)+'" class="secondary">Duplica</button><button type="button" data-delete="'+esc(p.id)+'" class="danger">Elimina</button></div></article>').join("");
+ $("productList").innerHTML=products.map(p=>'<article class="product">'+(p.image_url?'<img src="'+esc(p.image_url)+'" alt="">':'<div class="placeholder">J</div>')+'<div><strong>'+esc(p.name)+'</strong><small>'+esc(p.category==="shirts"?"T-shirt":p.category==="jeans"?"Jeans":"Pantaloni")+(p.color_name?' · '+esc(p.color_name):'')+(p.variant_group?' · <span style="color:#8a6d3b">Colori collegati</span>':'')+' · '+euro(p.price)+' · '+(p.active?"Pubblicato":"Nascosto")+' · Magazzino: '+Object.values(p.size_stock||{}).reduce((sum,n)=>sum+Number(n||0),0)+' pz'+(Object.values(p.size_stock||{}).reduce((sum,n)=>sum+Number(n||0),0)===0?' · SOLD OUT':'')+'<br>Taglie: '+esc((p.sizes||[]).join(", "))+'</small></div><div class="product-actions"><button type="button" data-edit="'+esc(p.id)+'" class="secondary">Modifica</button><button type="button" data-duplicate="'+esc(p.id)+'" class="secondary">Duplica</button><button type="button" data-delete="'+esc(p.id)+'" class="danger">Elimina</button></div></article>').join("");
 }
 function renderGalleryPreview(urls){
  const wrap=$("galleryPreview");wrap.innerHTML=(urls||[]).map((url,i)=>'<div style="position:relative"><img src="'+esc(url)+'" alt="Foto '+(i+1)+'" style="width:76px;height:96px;object-fit:cover;border:1px solid var(--line)"></div>').join("");
@@ -104,7 +104,7 @@ function openEditor(p,duplicate=false){
  currentImageUrls=duplicate?[]:(p?.image_urls?.length?[...p.image_urls]:(p?.image_url?[p.image_url]:[]));
  $("productId").value=duplicate?"":(p?.id||"");$("name").value=p?(duplicate?p.name+" – nuovo colore":p.name):"";
  let slug=p?.slug||"";if(duplicate){let n=2;while(products.some(x=>x.slug===slug+"-"+n))n++;slug=slug+"-"+n;}
- $("slug").value=duplicate?slug:(p?.slug||"");$("category").value=p?.category||"trousers";$("colorName").value=duplicate?"":(p?.color_name||"");$("variantGroup").value=p?.variant_group||"";$("price").value=p?.price??"";$("description").value=p?.description||"";$("sizes").value=(p?.sizes||[]).join(", ");renderSizeStockEditor(p?.sizes||[],p?.size_stock||{});$("sortOrder").value=duplicate?products.length+1:(p?.sort_order??(products.length+1));$("active").value=String(p?.active??true);$("photo").value="";
+ $("slug").value=duplicate?slug:(p?.slug||"");$("category").value=p?.category||"trousers";$("colorName").value=duplicate?"":(p?.color_name||"");$("variantGroup").value=p?.variant_group||"";$("price").value=p?.price??"";$("description").value=p?.description||"";$("sizes").value=(p?.sizes||[]).join(", ");renderSizeStockEditor(p?.sizes||[],duplicate?{}:(p?.size_stock||{}));$("sortOrder").value=duplicate?products.length+1:(p?.sort_order??(products.length+1));$("active").value=String(p?.active??true);$("photo").value="";
  renderGalleryPreview(currentImageUrls);
  $("editorTitle").textContent=duplicate?"Duplica prodotto · nuovo colore":(p?"Modifica prodotto":"Nuovo prodotto");$("variantHelp").textContent=duplicate?"Gruppo assegnato automaticamente: questo nuovo colore sarà collegato al prodotto originale sul sito.":"Per mostrare i colori insieme sul sito, tutti i prodotti dello stesso modello devono avere lo stesso gruppo. Il pulsante “Duplica” lo imposta automaticamente.";
  $("editor").style.display="block";$("editor").scrollIntoView({behavior:"smooth",block:"start"});
@@ -120,8 +120,7 @@ $("productList").addEventListener("click",async e=>{
 });
 $("photo").addEventListener("change",()=>{
  const stockRows=[...document.querySelectorAll(".size-stock-input")].map(el=>({product_id:saved.id,size:el.dataset.size,quantity:Math.max(0,Math.floor(Number(el.value)||0))}));
- const oldStock=await db.from("product_size_stock").delete().eq("product_id",saved.id);if(oldStock.error)throw oldStock.error;
- if(stockRows.length){const stockSave=await db.from("product_size_stock").insert(stockRows);if(stockSave.error)throw stockSave.error;}
+ if(stockRows.length){const stockSave=await db.from("product_size_stock").upsert(stockRows,{onConflict:"product_id,size"});if(stockSave.error)throw stockSave.error;}
  const files=[...$("photo").files];if(!files.length)return;
  const valid=files.every(file=>file.size<=10*1024*1024&&["image/jpeg","image/png","image/webp"].includes(file.type));
  if(!valid){$("photo").value="";message("notice","Ogni foto deve essere JPG, PNG o WebP e non superare 10 MB.");return;}
